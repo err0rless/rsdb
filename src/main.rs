@@ -131,7 +131,7 @@ fn main() -> Result<(), i32> {
             /*
              * Quit rsdb, automatically detach the process if still attached
              */
-            "exit" | "quit" => {
+            "exit" | "quit" | "q" => {
                 if target != -1 {
                     ptrace_check!("auto PTRACE_DETACH", rsdb::ptrace::detach(target));
                 }
