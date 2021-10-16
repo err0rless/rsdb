@@ -26,15 +26,14 @@ macro_rules! continue_if {
 fn prelaunch_checks() -> Result<(), &'static str> {
     // Are you running rsdb on the OS where '/proc' file-system exists?
     match fs::File::open("/proc/self/maps") {
-        Ok(f) => f,
+        Ok(_) => (),
         Err(_err) => return Err("rsdb failed to open '/proc/self/maps'"),
-    };
-
+    }
     // Are you root?
     match Uid::effective().is_root() {
-        true => true,
+        true => (),
         false => return Err("Please run rsdb with root privilege"),
-    };
+    }
     Ok(())
 }
 
