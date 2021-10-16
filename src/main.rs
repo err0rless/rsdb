@@ -86,7 +86,7 @@ fn main() -> Result<(), i32> {
                     Ok(pid) => {
                         unsafe {
                             continue_if!(rsdb::process::check_pid(pid) != rsdb::process::KILL_SUCCESS, 
-                                         "pid {} doesn't exist, check again");
+                                         "pid doesn't exist, check again");
                         }
                         pid
                     },
@@ -140,7 +140,7 @@ fn main() -> Result<(), i32> {
                 }
                 break; 
             },
-            "help" | "?" => rsdb_help(), 
+            "help" | "?" => rsdb_help(),
             "" => (),
             _ => println!("{}: {}", "Invalid command".red(), command),
         }
