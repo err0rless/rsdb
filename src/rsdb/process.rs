@@ -24,7 +24,6 @@ pub fn findpid(from: &str) -> i32 {
             innerpath.push("cmdline");
             innerpath
         };
-
         if let Ok(cmd) = fs::read_to_string(&newpath) {
             let cmd_first = cmd.split(" ").nth(0);
             if let Some(executable) = cmd_first {

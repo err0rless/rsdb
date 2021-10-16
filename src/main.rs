@@ -15,12 +15,17 @@ mod rsdb;
 
 // Continue if $cond is true
 macro_rules! continue_if {
+    ($cond:expr) => {
+        if $cond {
+            continue
+        }
+    };
     ($cond:expr, $msg:tt) => {
         if $cond {
             println!("{}", $msg);
             continue
         }
-    }
+    };
 }
 
 fn prelaunch_checks() -> Result<(), &'static str> {
@@ -135,9 +140,6 @@ fn main() -> Result<(), i32> {
              * Quit rsdb, automatically detach the process if still attached
              */
             "exit" | "quit" | "q" => {
-                if target != -1 {
-                    ptrace_check!("auto PTRACE_DETACH", rsdb::ptrace::detach(target));
-                }
                 break; 
             },
             "help" | "?" => rsdb_help(),
