@@ -106,6 +106,9 @@ fn main() -> Result<(), i32> {
                     target = -1;
                 }
             },
+            /*
+             * Resuming ptrace execution
+             */
             "continue" | "c" => {
                 continue_if!(target == -1, "error: No process has been attached");
                 ptrace_check!("PTRACE_CONT", rsdb::ptrace::cont(target));
