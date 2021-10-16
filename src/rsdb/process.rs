@@ -9,10 +9,6 @@ pub unsafe fn check_pid(pid: i32) -> i32 {
     libc::kill(pid, 0)
 }
 
-pub unsafe fn sigkill(pid: i32) -> i32 {
-    libc::kill(pid, libc::SIGKILL)
-}
-
 pub fn findpid(from: &str) -> i32 {
     let proc = fs::read_dir("/proc");
     if let Err(_) = proc {

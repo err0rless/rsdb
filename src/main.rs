@@ -13,7 +13,7 @@ use nix::unistd::*;
 #[macro_use]
 mod rsdb;
 
-// Continue if $cond is false
+// Continue if $cond is true
 macro_rules! continue_if {
     ($cond:expr, $msg:tt) => {
         if $cond {
