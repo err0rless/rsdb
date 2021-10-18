@@ -16,7 +16,7 @@ macro_rules! continue_if {
     };
     ($cond:expr, $msg:tt) => {
         if $cond {
-            println!("{}", $msg);
+            println!("{}", $msg.red());
             continue
         }
     };
