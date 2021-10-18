@@ -112,7 +112,7 @@ fn main() -> Result<(), i32> {
                     let regs = regs.unwrap();
                     rsdb::ptrace::dumpregs(&regs);
                 }
-            }
+            },
             "kill" => {
                 continue_if!(commands.len() != 2, "Usage: kill {{KILL_SIGNAL}}");
                 continue_if!(target == -1, "error: No process has been attached");
