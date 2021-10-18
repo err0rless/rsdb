@@ -80,10 +80,8 @@ fn main() -> Result<(), i32> {
                 let process = &commands[1];
                 target = match process.parse::<i32>() {
                     Ok(pid) => {
-                        unsafe {
-                            continue_if!(rsdb::process::check_pid(pid) != rsdb::process::KILL_SUCCESS, 
-                                         "pid doesn't exist, check again");
-                        }
+                        continue_if!(unsafe { !rsdb::process::check_pid(pid) }, 
+                                     "pid doesn't exist, check again");
                         pid
                     },
                     Err(_) => rsdb::process::findpid(process)

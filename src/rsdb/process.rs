@@ -5,8 +5,8 @@ use libc;
 
 pub const KILL_SUCCESS: i32 = 0;
 
-pub unsafe fn check_pid(pid: i32) -> i32 {
-    libc::kill(pid, 0)
+pub unsafe fn check_pid(pid: i32) -> bool {
+    libc::kill(pid, 0) == KILL_SUCCESS
 }
 
 pub fn findpid(from: &str) -> i32 {
