@@ -1,19 +1,13 @@
 use std::{io, fs};
 use std::io::Write;
 use std::iter::*;
-
 use regex::Regex;
-
 use colored::*;
-
-// Unix/Linux
 use nix::unistd::*;
 
-// mods
 #[macro_use]
 mod rsdb;
 
-// Continue if $cond is true
 macro_rules! continue_if {
     ($cond:expr) => {
         if $cond {
@@ -29,12 +23,12 @@ macro_rules! continue_if {
 }
 
 fn prelaunch_checks() -> Result<(), &'static str> {
-    // Are you running rsdb on the OS where '/proc' file-system exists?
+    // rsdb needs '/proc' pseudo file system to run.
     match fs::File::open("/proc/self/maps") {
         Ok(_) => (),
         Err(_err) => return Err("rsdb failed to open '/proc/self/maps'"),
     }
-    // Are you root?
+    // @TODO: remove constraint, let rsdb runs a process as a child of it.
     match Uid::effective().is_root() {
         true => (),
         false => return Err("Please run rsdb with root privilege"),
@@ -63,25 +57,22 @@ fn main() -> Result<(), i32> {
 
     let re = Regex::new(r"\s+").unwrap();
 
-    // This holds target process ID
+    // This holds target process ID, -1 if no process is attached
     let mut target: i32 = -1;
 
+    let mut commandline = String::from("rsdb # ".bright_blue().to_string());
     loop {
         buffer.clear();
-        print!("{}", "rsdb # ".bright_blue());
+        print!("{}", commandline);
         io::stdout().flush().unwrap();
 
         stdin.read_line(&mut buffer).unwrap();
 
-        // trimming
         let fullcmd = re.replace_all(buffer.trim(), " ");
         let commands = Vec::from_iter(fullcmd.split(" ").map(String::from));
         let command = &commands[0];
         
         match command.as_str() {
-            /*
-             * Process attaching
-             */
             "attach" => {
                 continue_if!(commands.len() != 2, "Usage: attach {{PID | Package/Process name}}");
                 continue_if!(target != -1, "rsdb is already holding the process, detach first");
@@ -102,25 +93,17 @@ fn main() -> Result<(), i32> {
                     target = -1;
                 }
             },
-            /*
-             * Process detaching
-             */
             "detach" => {
                 continue_if!(target == -1, "error: No process has been attached");
                 if ptrace_check!("PTRACE_DETACH", rsdb::ptrace::detach(target)) {
                     target = -1;
+                    commandline = String::from("rsdb # ".bright_blue().to_string());
                 }
             },
-            /*
-             * Resuming ptrace execution
-             */
             "continue" | "c" => {
                 continue_if!(target == -1, "error: No process has been attached");
                 ptrace_check!("PTRACE_CONT", rsdb::ptrace::cont(target));
             },
-            /*
-             * Dump registers
-             */
             "regs" => {
                 unsafe {
                     let regs = rsdb::ptrace::getregs(target);
@@ -130,9 +113,6 @@ fn main() -> Result<(), i32> {
                     rsdb::ptrace::dumpregs(&regs);
                 }
             }
-            /*
-             * Sending signal with PTRACE_KILL
-             */
             "kill" => {
                 continue_if!(commands.len() != 2, "Usage: kill {{KILL_SIGNAL}}");
                 continue_if!(target == -1, "error: No process has been attached");
@@ -148,9 +128,6 @@ fn main() -> Result<(), i32> {
                 };
                 ptrace_check!("PTRACE_KILL", rsdb::ptrace::kill(target, signum));
             },
-            /*
-             * Quit rsdb
-             */
             "exit" | "quit" | "q" => break,
             "help" | "?" => rsdb_help(),
             "" => (),
