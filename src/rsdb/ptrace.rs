@@ -7,22 +7,6 @@ use colored::*;
 
 const NULL: *mut i32 = ptr::null_mut();
 
-#[macro_export]
-macro_rules! ptrace_check {
-    ($ptrace_command: tt, $ptrace_expr: expr) => {
-        unsafe {
-            if $ptrace_expr != -1 {
-                println!("Successfully done: {}", $ptrace_command);
-                true
-            }
-            else {
-                println!("Failed to finish: {}", $ptrace_command);
-                false
-            }
-        }
-    };
-}
-
 // print error if global error is set, similar to perror(...);
 #[macro_export]
 macro_rules! ptrace_call {
