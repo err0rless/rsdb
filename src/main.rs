@@ -119,6 +119,18 @@ fn main() -> Result<(), i32> {
                 ptrace_check!("PTRACE_CONT", rsdb::ptrace::cont(target));
             },
             /*
+             * Dump registers
+             */
+            "regs" => {
+                unsafe {
+                    let regs = rsdb::ptrace::getregs(target);
+                    continue_if!(regs.is_err(), "Failed to retrive registers!");
+
+                    let regs = regs.unwrap();
+                    rsdb::ptrace::dumpregs(&regs);
+                }
+            }
+            /*
              * Sending signal with PTRACE_KILL
              */
             "kill" => {
@@ -126,22 +138,20 @@ fn main() -> Result<(), i32> {
                 continue_if!(target == -1, "error: No process has been attached");
                 
                 let arg_signal = &commands[1];
-                let signal_num = match arg_signal.parse::<i32>() {
-                    Ok(signum) => signum,
+                let signum = match arg_signal.parse::<i32>() {
+                    Ok(_signum) => _signum,
                     Err(_) => {
                         let r = rsdb::ptrace::get_signum(arg_signal);
                         continue_if!(r.is_err(), "Invalid signal format!");
                         r.unwrap()
                     },
                 };
-                ptrace_check!("PTRACE_KILL", rsdb::ptrace::kill(target, signal_num));
+                ptrace_check!("PTRACE_KILL", rsdb::ptrace::kill(target, signum));
             },
             /*
-             * Quit rsdb, automatically detach the process if still attached
+             * Quit rsdb
              */
-            "exit" | "quit" | "q" => {
-                break; 
-            },
+            "exit" | "quit" | "q" => break,
             "help" | "?" => rsdb_help(),
             "" => (),
             _ => println!("{}: {}", "Invalid command".red(), command),
