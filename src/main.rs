@@ -106,6 +106,7 @@ fn main() -> Result<(), i32> {
                 unsafe { let _ = rsdb::ptrace::cont(target); };
             },
             "regs" => {
+                continue_if!(target == -1, "error: No process has been attached");
                 unsafe {
                     let regs = rsdb::ptrace::getregs(target);
                     continue_if!(regs.is_err(), "Failed to retrive registers!");
