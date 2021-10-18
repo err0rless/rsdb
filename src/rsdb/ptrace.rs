@@ -70,9 +70,8 @@ pub unsafe fn kill(target: i32, signal: i32) -> Result<i64, ()> {
 
 pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, ()> {
     let mut data = mem::MaybeUninit::uninit();
-    let ret = ptrace_call!(PTRACE_GETREGS, target, NULL, 
-        data.as_mut_ptr() as *const _ as *const c_void);
-    ret?;
+    ptrace_call!(PTRACE_GETREGS, target, NULL, 
+                 data.as_mut_ptr() as *const _ as *mut c_void)?;
     Ok(data.assume_init())
 }
 
