@@ -89,20 +89,21 @@ fn main() -> Result<(), i32> {
                     Err(_) => rsdb::process::findpid(process)
                 };
 
-                if target == -1 || !ptrace_check!("PTRACE_ATTACH", rsdb::ptrace::attach_wait(target)) {
+                // one of attaching and waiting pid failed, nullify target pid
+                if unsafe { rsdb::ptrace::attach_wait(target).is_err() } {
                     target = -1;
                 }
             },
             "detach" => {
                 continue_if!(target == -1, "error: No process has been attached");
-                if ptrace_check!("PTRACE_DETACH", rsdb::ptrace::detach(target)) {
+                if unsafe { rsdb::ptrace::detach(target).is_ok() } {
                     target = -1;
                     commandline = String::from("rsdb # ".bright_blue().to_string());
                 }
             },
             "continue" | "c" => {
                 continue_if!(target == -1, "error: No process has been attached");
-                ptrace_check!("PTRACE_CONT", rsdb::ptrace::cont(target));
+                unsafe { let _ = rsdb::ptrace::cont(target); };
             },
             "regs" => {
                 unsafe {
@@ -126,7 +127,7 @@ fn main() -> Result<(), i32> {
                         r.unwrap()
                     },
                 };
-                ptrace_check!("PTRACE_KILL", rsdb::ptrace::kill(target, signum));
+                unsafe { let _ = rsdb::ptrace::kill(target, signum); };
             },
             "exit" | "quit" | "q" => break,
             "help" | "?" => rsdb_help(),

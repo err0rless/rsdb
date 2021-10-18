@@ -3,8 +3,9 @@ use libc::*;
 use std::mem;
 use nix::errno::Errno;
 
+use colored::*;
+
 const NULL: *mut i32 = ptr::null_mut();
-type VoidPtr = *mut libc::c_void;
 
 #[macro_export]
 macro_rules! ptrace_check {
@@ -17,6 +18,24 @@ macro_rules! ptrace_check {
             else {
                 println!("Failed to finish: {}", $ptrace_command);
                 false
+            }
+        }
+    };
+}
+
+// print error if global error is set, similar to perror(...);
+#[macro_export]
+macro_rules! ptrace_call {
+    ($($ptrace_args: expr),*) => {
+        /* unsafe */ {
+            let ret = libc::ptrace($($ptrace_args), *);
+            if let Err(no) = Errno::result(ret) {
+                let errstr: String = format!("ptrace: {}", no.desc());
+                println!("{}", errstr.red());
+                Err(())
+            }
+            else {
+                Ok(ret)
             }
         }
     };
@@ -38,32 +57,38 @@ pub fn get_signum(signal_name: &str) -> Result<i32, ()> {
     }
 }
 
-pub unsafe fn attach(target: i32) -> i64 {
-    ptrace(PTRACE_ATTACH, target, NULL, NULL)
+pub unsafe fn attach(target: i32) -> Result<i64, ()> {
+    ptrace_call!(PTRACE_ATTACH, target, NULL, NULL)
 }
 
-pub unsafe fn attach_wait(target: i32) -> i64 {
-    if attach(target) == -1 { return -1 }
-    waitpid(target, NULL, WSTOPPED) as i64
+pub unsafe fn attach_wait(target: i32) -> Result<i64, ()> {
+    attach(target)?;
+    let ret = waitpid(target, NULL, WSTOPPED);
+    if ret == -1 {
+        Err(())
+    }
+    else {
+        Ok(ret as i64)
+    }
 }
 
-pub unsafe fn detach(target: i32) -> i64 {
-    ptrace(PTRACE_DETACH, target, NULL, NULL)
+pub unsafe fn detach(target: i32) -> Result<i64, ()> {
+    ptrace_call!(PTRACE_DETACH, target, NULL, NULL)
 }
 
-pub unsafe fn cont(target: i32) -> i64 {
-    ptrace(PTRACE_CONT, target, NULL, NULL)
+pub unsafe fn cont(target: i32) -> Result<i64, ()> {
+    ptrace_call!(PTRACE_CONT, target, NULL, NULL)
 }
 
-pub unsafe fn kill(target: i32, signal: i32) -> i64 {
-    ptrace(PTRACE_KILL, target, signal, NULL)
+pub unsafe fn kill(target: i32, signal: i32) -> Result<i64, ()> {
+    ptrace_call!(PTRACE_KILL, target, signal, NULL)
 }
 
-pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, nix::errno::Errno> {
+pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, ()> {
     let mut data = mem::MaybeUninit::uninit();
-    let ret = ptrace(PTRACE_GETREGS, target, NULL, 
-                         data.as_mut_ptr() as *const _ as *const c_void);
-    Errno::result(ret)?;
+    let ret = ptrace_call!(PTRACE_GETREGS, target, NULL, 
+        data.as_mut_ptr() as *const _ as *const c_void);
+    ret?;
     Ok(data.assume_init())
 }
 
