@@ -25,22 +25,6 @@ macro_rules! rsdb_ptrace {
     };
 }
 
-pub fn get_signum(signal_name: &str) -> Result<i32, ()> {
-    let upper = signal_name.to_uppercase();
-    match &upper[..] {
-        "SIGKILL" => Ok(libc::SIGKILL),
-        "SIGCONT" => Ok(libc::SIGCONT),
-        "SIGABRT" => Ok(libc::SIGABRT),
-        "SIGSTOP" => Ok(libc::SIGSTOP),
-        "SIGINT"  => Ok(libc::SIGINT),
-        "SIGTERM" => Ok(libc::SIGTERM),
-        "SIGBUS"  => Ok(libc::SIGBUS),
-        "SIGSEGV" => Ok(libc::SIGSEGV),
-        "SIGTRAP" => Ok(libc::SIGTRAP),
-        _ => Err(()),
-    }
-}
-
 pub unsafe fn attach(target: i32) -> Result<i64, ()> {
     rsdb_ptrace!(PTRACE_ATTACH, target, NULL, NULL)
 }
