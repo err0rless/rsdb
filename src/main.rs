@@ -103,14 +103,21 @@ fn main() -> Result<(), i32> {
                 continue_if!(target == -1, "error: No process has been attached");
                 unsafe { let _ = rsdb::ptrace::cont(target); };
             },
-            "regs" => {
-                continue_if!(target == -1, "error: No process has been attached");
-                unsafe {
-                    let regs = rsdb::ptrace::getregs(target);
-                    continue_if!(regs.is_err(), "Failed to retrive registers!");
-
-                    let regs = regs.unwrap();
-                    rsdb::ptrace::dumpregs(&regs);
+            "info" => {
+                continue_if!(commands.len() != 2, "Usage: info {{regs | ...}}");
+                let arg = &commands[1];
+                match &arg[..] {
+                    "regs" | "r" => {
+                        continue_if!(target == -1, "error: No process has been attached");
+                        unsafe {
+                            let regs = rsdb::ptrace::getregs(target);
+                            continue_if!(regs.is_err(), "Failed to retrive registers!");
+        
+                            let regs = regs.unwrap();
+                            rsdb::ptrace::dumpregs(&regs);
+                        }
+                    },
+                    _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
                 }
             },
             "kill" => {
