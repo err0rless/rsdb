@@ -42,6 +42,9 @@ fn rsdb_help() {
     println!("    attach {{PID | Package name}} => attach to the prcess");
     println!("        e.g) {} or {}", "attach 31337".bright_yellow(), "attach com.test.package".bright_yellow());
     println!("    detach => detach from the process");
+    println!("    info => info {{subcommand}}");
+    println!("      regs => show registers");
+    println!("      proc => show process informations");
     println!("    kill => send signal to the attached process");
     println!("    exit | quit => Exit rsdb");
 }
@@ -111,7 +114,7 @@ fn main() -> Result<(), i32> {
                 unsafe { let _ = rsdb::ptrace::cont(target); };
             },
             "info" => {
-                continue_if!(commands.len() != 2, "Usage: info {{regs | ...}}");
+                continue_if!(commands.len() != 2, "Usage: info {{regs | proc}}");
                 let arg = &commands[1];
                 match &arg[..] {
                     "regs" | "r" => {
