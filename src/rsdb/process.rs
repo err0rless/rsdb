@@ -1,9 +1,37 @@
 use std::path::*;
 use std::fs;
+use core::fmt;
 
 use libc;
 
 const KILL_SUCCESS: i32 = 0;
+
+pub struct Proc {
+    pub target: i32,
+    pub exe: PathBuf,
+    pub cwd: PathBuf,
+}
+
+impl Proc {
+    pub fn dump(&self) {
+        println!("pid = {}", self.target);
+        println!("exe = '{}'", self.exe.display());
+        println!("cwd = '{}'", self.cwd.display());
+    }
+
+    pub fn clear(&mut self) {
+        self.target = -1;
+        self.exe.clear();
+        self.cwd.clear();
+    }
+}
+
+impl fmt::Display for Proc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "pid = {}\nexe = '{}'\ncwd = '{}'", 
+            self.target, self.exe.display(), self.cwd.display())
+    }
+}
 
 pub fn get_proc_exe(target: i32) -> Result<PathBuf, ()> {
     let mut path = PathBuf::from("/proc");
@@ -19,7 +47,7 @@ pub fn get_proc_cwd(target: i32) -> Result<PathBuf, ()> {
     let mut path = PathBuf::from("/proc");
     path.push(target.to_string());
     path.push("cwd");
-    match fs::canonicalize(path) {
+    match path.read_link() {
         Ok(dest) => Ok(dest),
         Err(_) => Err(()),
     }

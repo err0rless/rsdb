@@ -38,15 +38,15 @@ fn prelaunch_checks() -> Result<(), &'static str> {
 
 fn rsdb_help() {
     println!("{}", "rsdb: Linux Debugger written in Rust".bright_yellow());
-    println!("    help | ? => Print help");
-    println!("    attach {{PID | Package name}} => attach to the prcess");
-    println!("        e.g) {} or {}", "attach 31337".bright_yellow(), "attach com.test.package".bright_yellow());
-    println!("    detach => detach from the process");
-    println!("    info => info {{subcommand}}");
-    println!("      regs => show registers");
-    println!("      proc => show process informations");
-    println!("    kill => send signal to the attached process");
-    println!("    exit | quit => Exit rsdb");
+    println!("  help | ? => Print help");
+    println!("  attach {{PID | Package name}} => attach to the prcess");
+    println!("    e.g) {} or {}", "attach 31337".bright_yellow(), "attach com.test.package".bright_yellow());
+    println!("  detach => detach from the process");
+    println!("  info => info {{subcommand}}");
+    println!("    regs => show registers");
+    println!("    proc => show process informations");
+    println!("  kill => send signal to the attached process");
+    println!("  exit | quit => Exit rsdb");
 }
 
 fn main() -> Result<(), i32> {
@@ -61,10 +61,12 @@ fn main() -> Result<(), i32> {
     let re = Regex::new(r"\s+").unwrap();
 
     // This holds target process ID, -1 if no process is attached
-    let mut target: i32 = -1;
-    let mut exe: PathBuf = PathBuf::new();
-    let mut cwd: PathBuf = PathBuf::new();
-
+    let mut proc = rsdb::process::Proc {
+        target: -1, 
+        exe: PathBuf::new(), 
+        cwd: PathBuf::new() 
+    };
+    
     let mut commandline = String::from("rsdb # ".bright_blue().to_string());
     loop {
         buffer.clear();
@@ -80,10 +82,10 @@ fn main() -> Result<(), i32> {
         match command.as_str() {
             "attach" => {
                 continue_if!(commands.len() != 2, "Usage: attach {{PID | Package/Process name}}");
-                continue_if!(target != -1, "rsdb is already holding the process, detach first");
+                continue_if!(proc.target != -1, "rsdb is already holding the process, detach first");
                 
                 let process = &commands[1];
-                target = match process.parse::<i32>() {
+                proc.target = match process.parse::<i32>() {
                     Ok(pid) => {
                         continue_if!(unsafe { !rsdb::process::check_pid(pid) }, 
                                      "pid doesn't exist, check again");
@@ -93,34 +95,34 @@ fn main() -> Result<(), i32> {
                 };
 
                 // one of attaching and waiting pid failed, nullify target pid
-                match unsafe { rsdb::ptrace::attach_wait(target) } {
+                match unsafe { rsdb::ptrace::attach_wait(proc.target) } {
                     Ok(_) => {
-                        println!("Successfully attached to pid: {}", target);
-                        exe = rsdb::process::get_proc_exe(target).unwrap();
-                        cwd = rsdb::process::get_proc_cwd(target).unwrap();
+                        println!("Successfully attached to pid: {}", proc.target);
+                        proc.exe = rsdb::process::get_proc_exe(proc.target).unwrap();
+                        proc.cwd = rsdb::process::get_proc_cwd(proc.target).unwrap();
                     },
-                    Err(_) => target = -1,
+                    Err(_) => proc.target = -1,
                 }
             },
             "detach" => {
-                continue_if!(target == -1, "error: No process has been attached");
-                if unsafe { rsdb::ptrace::detach(target).is_ok() } {
+                continue_if!(proc.target == -1, "error: No process has been attached");
+                if unsafe { rsdb::ptrace::detach(proc.target).is_ok() } {
                     commandline = String::from("rsdb # ".bright_blue().to_string());
-                    target = -1;
+                    proc.clear();
                 }
             },
             "continue" | "c" => {
-                continue_if!(target == -1, "error: No process has been attached");
-                unsafe { let _ = rsdb::ptrace::cont(target); };
+                continue_if!(proc.target == -1, "error: No process has been attached");
+                unsafe { let _ = rsdb::ptrace::cont(proc.target); };
             },
             "info" => {
                 continue_if!(commands.len() != 2, "Usage: info {{regs | proc}}");
                 let arg = &commands[1];
                 match &arg[..] {
                     "regs" | "r" => {
-                        continue_if!(target == -1, "error: No process has been attached");
+                        continue_if!(proc.target == -1, "error: No process has been attached");
                         unsafe {
-                            let regs = rsdb::ptrace::getregs(target);
+                            let regs = rsdb::ptrace::getregs(proc.target);
                             continue_if!(regs.is_err(), "Failed to retrive registers!");
         
                             let regs = regs.unwrap();
@@ -128,21 +130,20 @@ fn main() -> Result<(), i32> {
                         }
                     },
                     "proc" => {
-                        continue_if!(target == -1, "error: No process has been attached");
-                        println!("pid={}", target);
-                        println!("exe='{}'", exe.display());
-                        println!("cwd='{}'", cwd.display());
+                        continue_if!(proc.target == -1, "error: No process has been attached");
+                        proc.dump();
                     },
                     _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
                 }
             },
             "kill" => {
                 continue_if!(commands.len() != 1, "Usage: kill");
-                continue_if!(target == -1, "error: No process has been attached");
+                continue_if!(proc.target == -1, "error: No process has been attached");
 
-                if unsafe { rsdb::ptrace::sigkill(target).is_ok() } {
+                if unsafe { rsdb::ptrace::sigkill(proc.target).is_ok() } {
                     println!("Process killed successfully");
-                    target = -1;
+                    proc.target = -1;
+                    proc.cwd = PathBuf::from("");
                 }
             },
             "exit" | "quit" | "q" => break,
