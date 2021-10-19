@@ -92,6 +92,7 @@ fn main() -> Result<(), i32> {
                 // one of attaching and waiting pid failed, nullify target pid
                 match unsafe { rsdb::ptrace::attach_wait(target) } {
                     Ok(_) => {
+                        println!("Successfully attached to pid: {}", target);
                         exe = rsdb::process::get_proc_exe(target).unwrap();
                         cwd = rsdb::process::get_proc_cwd(target).unwrap();
                     },
