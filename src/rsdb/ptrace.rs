@@ -1,7 +1,7 @@
 use std::ptr;
 use libc::*;
 use std::mem;
-use nix::errno::Errno;
+use nix::{errno::Errno};
 
 use colored::*;
 
@@ -64,8 +64,10 @@ pub unsafe fn cont(target: i32) -> Result<i64, ()> {
     ptrace_call!(PTRACE_CONT, target, NULL, NULL)
 }
 
-pub unsafe fn kill(target: i32, signal: i32) -> Result<i64, ()> {
-    ptrace_call!(PTRACE_KILL, target, signal, NULL)
+pub unsafe fn sigkill(target: i32) -> Result<i64, ()> {
+    let ret = ptrace_call!(PTRACE_KILL, target, libc::SIGKILL, NULL);
+    waitpid(target, NULL, WSTOPPED);
+    ret
 }
 
 pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, ()> {

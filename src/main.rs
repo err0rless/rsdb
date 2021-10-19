@@ -95,8 +95,8 @@ fn main() -> Result<(), i32> {
             "detach" => {
                 continue_if!(target == -1, "error: No process has been attached");
                 if unsafe { rsdb::ptrace::detach(target).is_ok() } {
-                    target = -1;
                     commandline = String::from("rsdb # ".bright_blue().to_string());
+                    target = -1;
                 }
             },
             "continue" | "c" => {
@@ -114,19 +114,13 @@ fn main() -> Result<(), i32> {
                 }
             },
             "kill" => {
-                continue_if!(commands.len() != 2, "Usage: kill {{KILL_SIGNAL}}");
+                continue_if!(commands.len() != 1, "Usage: kill");
                 continue_if!(target == -1, "error: No process has been attached");
-                
-                let arg_signal = &commands[1];
-                let signum = match arg_signal.parse::<i32>() {
-                    Ok(_signum) => _signum,
-                    Err(_) => {
-                        let r = rsdb::ptrace::get_signum(arg_signal);
-                        continue_if!(r.is_err(), "Invalid signal format!");
-                        r.unwrap()
-                    },
-                };
-                unsafe { let _ = rsdb::ptrace::kill(target, signum); };
+
+                if unsafe { rsdb::ptrace::sigkill(target).is_ok() } {
+                    println!("Process killed successfully");
+                    target = -1;
+                }
             },
             "exit" | "quit" | "q" => break,
             "help" | "?" => rsdb_help(),
