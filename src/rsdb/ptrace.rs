@@ -1,7 +1,7 @@
 use std::ptr;
 use libc::*;
 use std::mem;
-use nix::{errno::Errno};
+use nix::errno::Errno;
 
 use colored::*;
 

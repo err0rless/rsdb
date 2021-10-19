@@ -3,7 +3,27 @@ use std::fs;
 
 use libc;
 
-pub const KILL_SUCCESS: i32 = 0;
+const KILL_SUCCESS: i32 = 0;
+
+pub fn get_proc_exe(target: i32) -> Result<PathBuf, ()> {
+    let mut path = PathBuf::from("/proc");
+    path.push(target.to_string());
+    path.push("exe");
+    match fs::canonicalize(path) {
+        Ok(dest) => Ok(dest),
+        Err(_) => Err(()),
+    }
+}
+
+pub fn get_proc_cwd(target: i32) -> Result<PathBuf, ()> {
+    let mut path = PathBuf::from("/proc");
+    path.push(target.to_string());
+    path.push("cwd");
+    match fs::canonicalize(path) {
+        Ok(dest) => Ok(dest),
+        Err(_) => Err(()),
+    }
+}
 
 pub unsafe fn check_pid(pid: i32) -> bool {
     libc::kill(pid, 0) == KILL_SUCCESS

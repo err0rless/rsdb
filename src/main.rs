@@ -1,4 +1,4 @@
-use std::{io, fs};
+use std::{io, fs, path::PathBuf};
 use std::io::Write;
 use std::iter::*;
 use regex::Regex;
@@ -59,6 +59,8 @@ fn main() -> Result<(), i32> {
 
     // This holds target process ID, -1 if no process is attached
     let mut target: i32 = -1;
+    let mut exe: PathBuf = PathBuf::new();
+    let mut cwd: PathBuf = PathBuf::new();
 
     let mut commandline = String::from("rsdb # ".bright_blue().to_string());
     loop {
@@ -88,8 +90,12 @@ fn main() -> Result<(), i32> {
                 };
 
                 // one of attaching and waiting pid failed, nullify target pid
-                if unsafe { rsdb::ptrace::attach_wait(target).is_err() } {
-                    target = -1;
+                match unsafe { rsdb::ptrace::attach_wait(target) } {
+                    Ok(_) => {
+                        exe = rsdb::process::get_proc_exe(target).unwrap();
+                        cwd = rsdb::process::get_proc_cwd(target).unwrap();
+                    },
+                    Err(_) => target = -1,
                 }
             },
             "detach" => {
@@ -116,6 +122,12 @@ fn main() -> Result<(), i32> {
                             let regs = regs.unwrap();
                             rsdb::ptrace::dumpregs(&regs);
                         }
+                    },
+                    "proc" => {
+                        continue_if!(target == -1, "error: No process has been attached");
+                        println!("pid={}", target);
+                        println!("exe='{}'", exe.display());
+                        println!("cwd='{}'", cwd.display());
                     },
                     _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
                 }
