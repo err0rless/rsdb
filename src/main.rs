@@ -98,8 +98,12 @@ fn main() -> Result<(), i32> {
                 match unsafe { rsdb::ptrace::attach_wait(proc.target) } {
                     Ok(_) => {
                         println!("Successfully attached to pid: {}", proc.target);
-                        proc.exe = rsdb::process::get_proc_exe(proc.target).unwrap();
-                        proc.cwd = rsdb::process::get_proc_cwd(proc.target).unwrap();
+                        if let Ok(exe) = rsdb::process::get_proc_exe(proc.target) {
+                            proc.exe = exe;
+                        }
+                        if let Ok(cwd) = rsdb::process::get_proc_cwd(proc.target) {
+                            proc.cwd = cwd;
+                        }
                     },
                     Err(_) => proc.target = -1,
                 }
