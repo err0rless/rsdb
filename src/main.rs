@@ -68,7 +68,7 @@ fn main() -> Result<(), i32> {
         cwd: PathBuf::new() 
     };
     
-    let mut commandline = String::from("rsdb ~> ".bright_blue().to_string());
+    let commandline = String::from("rsdb ~> ".bright_blue().to_string());
     loop {
         buffer.clear();
         print!("{}", commandline);
