@@ -97,7 +97,7 @@ fn main() -> Result<(), i32> {
                 match unsafe { rsdb::ptrace::attach_wait(new_target) } {
                     Ok(_) => {
                         println!("Successfully attached to pid: {}", new_target);
-                        proc.init(new_target);
+                        proc.init_with_pid(new_target);
                     },
                     Err(_) => (),
                 }

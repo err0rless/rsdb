@@ -14,6 +14,19 @@ pub struct Proc {
 }
 
 impl Proc {
+    pub fn init_with_pid(&mut self, pid: i32) {
+        self.target = pid;
+        if let Ok(cmdline) = get_proc_cmdline(pid) {
+            self.cmdline = cmdline;
+        }
+        if let Ok(exe) = get_proc_exe(pid) {
+            self.exe = exe;
+        }
+        if let Ok(cwd) = get_proc_cwd(pid) {
+            self.cwd = cwd;
+        }
+    }
+
     pub fn dump(&self) {
         println!("pid = {}", self.target);
         println!("cmdline = '{}'", self.cmdline);
@@ -26,19 +39,6 @@ impl Proc {
         self.cmdline.clear();
         self.exe.clear();
         self.cwd.clear();
-    }
-
-    pub fn init(&mut self, pid: i32) {
-        self.target = pid;
-        if let Ok(cmdline) = get_proc_cmdline(pid) {
-            self.cmdline = cmdline;
-        }
-        if let Ok(exe) = get_proc_exe(pid) {
-            self.exe = exe;
-        }
-        if let Ok(cwd) = get_proc_cwd(pid) {
-            self.cwd = cwd;
-        }
     }
 }
 
