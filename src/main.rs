@@ -63,6 +63,7 @@ fn main() -> Result<(), i32> {
     // This holds target process ID, -1 if no process is attached
     let mut proc = rsdb::process::Proc {
         target: -1, 
+        cmdline: String::from(""),
         exe: PathBuf::new(), 
         cwd: PathBuf::new() 
     };
@@ -85,27 +86,20 @@ fn main() -> Result<(), i32> {
                 continue_if!(proc.target != -1, "rsdb is already holding the process, detach first");
                 
                 let process = &commands[1];
-                proc.target = match process.parse::<i32>() {
-                    Ok(pid) => {
-                        continue_if!(unsafe { !rsdb::process::check_pid(pid) }, 
-                                     "pid doesn't exist, check again");
-                        pid
-                    },
-                    Err(_) => rsdb::process::findpid(process)
+                let new_target = match process.parse::<i32>() {
+                    Ok(pid) => pid,
+                    Err(_) => rsdb::process::findpid(process),
                 };
+                continue_if!(unsafe { !rsdb::process::check_pid(new_target) }, 
+                             "pid doesn't exist, check again");
 
                 // one of attaching and waiting pid failed, nullify target pid
-                match unsafe { rsdb::ptrace::attach_wait(proc.target) } {
+                match unsafe { rsdb::ptrace::attach_wait(new_target) } {
                     Ok(_) => {
-                        println!("Successfully attached to pid: {}", proc.target);
-                        if let Ok(exe) = rsdb::process::get_proc_exe(proc.target) {
-                            proc.exe = exe;
-                        }
-                        if let Ok(cwd) = rsdb::process::get_proc_cwd(proc.target) {
-                            proc.cwd = cwd;
-                        }
+                        println!("Successfully attached to pid: {}", new_target);
+                        proc.init(new_target);
                     },
-                    Err(_) => proc.target = -1,
+                    Err(_) => (),
                 }
             },
             "detach" => {

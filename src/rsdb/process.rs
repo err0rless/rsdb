@@ -8,6 +8,7 @@ const KILL_SUCCESS: i32 = 0;
 
 pub struct Proc {
     pub target: i32,
+    pub cmdline: String,
     pub exe: PathBuf,
     pub cwd: PathBuf,
 }
@@ -15,21 +16,50 @@ pub struct Proc {
 impl Proc {
     pub fn dump(&self) {
         println!("pid = {}", self.target);
+        println!("cmdline = '{}'", self.cmdline);
         println!("exe = '{}'", self.exe.display());
         println!("cwd = '{}'", self.cwd.display());
     }
 
     pub fn clear(&mut self) {
         self.target = -1;
+        self.cmdline.clear();
         self.exe.clear();
         self.cwd.clear();
+    }
+
+    pub fn init(&mut self, pid: i32) {
+        self.target = pid;
+        if let Ok(cmdline) = get_proc_cmdline(pid) {
+            self.cmdline = cmdline;
+        }
+        if let Ok(exe) = get_proc_exe(pid) {
+            self.exe = exe;
+        }
+        if let Ok(cwd) = get_proc_cwd(pid) {
+            self.cwd = cwd;
+        }
     }
 }
 
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "pid = {}\nexe = '{}'\ncwd = '{}'", 
-            self.target, self.exe.display(), self.cwd.display())
+        write!(f, "pid = {}\ncmdline = '{}'\nexe = '{}'\ncwd = '{}'", 
+            self.target, self.cmdline, self.exe.display(), self.cwd.display())
+    }
+}
+
+pub fn get_proc_cmdline(target: i32) -> Result<String, ()> {
+    let mut path = PathBuf::from("/proc");
+    path.push(target.to_string());
+    path.push("cmdline");
+    if !path.exists() {
+        println!("Cannot open file: {}", path.display());
+        return Err(());
+    }
+    match fs::read_to_string(&path) {
+        Ok(cmd) => Ok(cmd),
+        Err(_) => Err(()),
     }
 }
 
