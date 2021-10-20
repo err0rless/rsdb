@@ -68,7 +68,7 @@ fn main() -> Result<(), i32> {
         cwd: PathBuf::new() 
     };
     
-    let mut commandline = String::from("rsdb # ".bright_blue().to_string());
+    let mut commandline = String::from("rsdb ~> ".bright_blue().to_string());
     loop {
         buffer.clear();
         print!("{}", commandline);
@@ -105,7 +105,6 @@ fn main() -> Result<(), i32> {
             "detach" => {
                 continue_if!(proc.target == -1, "error: No process has been attached");
                 if unsafe { rsdb::ptrace::detach(proc.target).is_ok() } {
-                    commandline = String::from("rsdb # ".bright_blue().to_string());
                     proc.clear();
                 }
             },
