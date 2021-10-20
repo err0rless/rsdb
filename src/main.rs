@@ -51,7 +51,7 @@ fn rsdb_help() {
 
 fn main() -> Result<(), i32> {
     if let Err(err_code) = prelaunch_checks() {
-        println!("rsdb: {}", err_code.red());
+        println!("failed to launch rsdb: {}", err_code.red());
         return Err(1);
     }
 
@@ -140,8 +140,7 @@ fn main() -> Result<(), i32> {
 
                 if unsafe { rsdb::ptrace::sigkill(proc.target).is_ok() } {
                     println!("Process killed successfully");
-                    proc.target = -1;
-                    proc.cwd = PathBuf::from("");
+                    proc.clear();
                 }
             },
             "exit" | "quit" | "q" => break,
