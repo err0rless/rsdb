@@ -31,12 +31,9 @@ pub unsafe fn attach(target: i32) -> Result<i64, ()> {
 
 pub unsafe fn attach_wait(target: i32) -> Result<i64, ()> {
     attach(target)?;
-    let ret = waitpid(target, NULL, WSTOPPED);
-    if ret == -1 {
-        Err(())
-    }
-    else {
-        Ok(ret as i64)
+    match waitpid(target, NULL, WSTOPPED) {
+        -1 => Err(()),
+        i => Ok(i as i64),
     }
 }
 
