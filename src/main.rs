@@ -94,7 +94,6 @@ fn main() -> Result<(), i32> {
                 continue_if!(unsafe { !rsdb::process::check_pid(new_target) }, 
                              "pid doesn't exist, check again");
 
-                // one of attaching and waiting pid failed, nullify target pid
                 match unsafe { rsdb::ptrace::attach_wait(new_target) } {
                     Ok(_) => {
                         println!("Successfully attached to pid: {}", new_target);
