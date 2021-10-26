@@ -83,6 +83,20 @@ pub fn get_proc_cwd(target: i32) -> Result<PathBuf, ()> {
     }
 }
 
+pub fn get_proc_maps(target: i32) -> Result<String, ()> {
+    let mut path = PathBuf::from("/proc");
+    path.push(target.to_string());
+    path.push("maps");
+    if !path.exists() {
+        println!("Cannot open file: {}", path.display());
+        return Err(());
+    }
+    match fs::read_to_string(&path) {
+        Ok(cmd) => Ok(cmd),
+        Err(_) => Err(()),
+    }
+}
+
 pub unsafe fn check_pid(pid: i32) -> bool {
     libc::kill(pid, 0) == KILL_SUCCESS
 }
