@@ -45,6 +45,7 @@ fn rsdb_help() {
     println!("  info => info {{subcommand}}");
     println!("    regs => show registers");
     println!("    proc => show process informations");
+    println!("    maps => show memory maps for the process");
     println!("  kill => send signal to the attached process");
     println!("  exit | quit => Exit rsdb");
 }
