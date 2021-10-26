@@ -1,4 +1,4 @@
-use std::{io, fs, path::PathBuf};
+use std::{io, fs};
 use std::io::Write;
 use std::iter::*;
 use regex::Regex;
@@ -62,12 +62,7 @@ fn main() -> Result<(), i32> {
     let re = Regex::new(r"\s+").unwrap();
 
     // This holds target process ID, -1 if no process is attached
-    let mut proc = rsdb::process::Proc {
-        target: -1, 
-        cmdline: String::from(""),
-        exe: PathBuf::new(), 
-        cwd: PathBuf::new() 
-    };
+    let mut proc = rsdb::process::Proc::new();
     
     let commandline = String::from("rsdb ~> ".bright_blue().to_string());
     loop {

@@ -8,12 +8,21 @@ const KILL_SUCCESS: i32 = 0;
 
 pub struct Proc {
     pub target: i32,
-    pub cmdline: String,
-    pub exe: PathBuf,
-    pub cwd: PathBuf,
+    cmdline: String,
+    exe: PathBuf,
+    cwd: PathBuf,
 }
 
 impl Proc {
+    pub fn new() -> Proc {
+        Proc { 
+            target: -1, 
+            cmdline: String::from(""), 
+            exe: PathBuf::new(), 
+            cwd: PathBuf::new() 
+        }
+    }
+
     pub fn init_with_pid(&mut self, pid: i32) {
         self.target = pid;
         if let Ok(cmdline) = get_proc_cmdline(pid) {
