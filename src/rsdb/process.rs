@@ -11,6 +11,7 @@ pub struct Proc {
     cmdline: String,
     exe: PathBuf,
     cwd: PathBuf,
+    maps: String,
 }
 
 impl Proc {
@@ -19,21 +20,33 @@ impl Proc {
             target: -1, 
             cmdline: String::from(""), 
             exe: PathBuf::new(), 
-            cwd: PathBuf::new() 
+            cwd: PathBuf::new(),
+            maps: String::from("") 
         }
     }
 
     pub fn init_with_pid(&mut self, pid: i32) {
         self.target = pid;
-        if let Ok(cmdline) = get_proc_cmdline(pid) {
-            self.cmdline = cmdline;
-        }
-        if let Ok(exe) = get_proc_exe(pid) {
-            self.exe = exe;
-        }
-        if let Ok(cwd) = get_proc_cwd(pid) {
-            self.cwd = cwd;
-        }
+        self.cmdline = match get_proc_cmdline(pid) {
+            Ok(cmdline) => cmdline,
+            Err(_) => String::from(""),
+        };
+        self.exe = match get_proc_exe(pid) {
+            Ok(exe) => exe,
+            Err(_) => PathBuf::new(),
+        };
+        self.cwd = match get_proc_cwd(pid) {
+            Ok(cwd) => cwd,
+            Err(_) => PathBuf::new(),
+        };
+        self.maps = match get_proc_maps(pid) {
+            Ok(maps) => maps,
+            Err(_) => String::from(""),
+        };
+    }
+
+    pub fn update(&mut self) {
+        self.init_with_pid(self.target);
     }
 
     pub fn dump(&self) {
@@ -41,6 +54,10 @@ impl Proc {
         println!("cmdline = '{}'", self.cmdline);
         println!("exe = '{}'", self.exe.display());
         println!("cwd = '{}'", self.cwd.display());
+    }
+
+    pub fn dump_maps(&self) {
+        println!("{}", self.maps);
     }
 
     pub fn clear(&mut self) {

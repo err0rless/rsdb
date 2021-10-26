@@ -123,15 +123,14 @@ fn main() -> Result<(), i32> {
                     },
                     "proc" => {
                         continue_if!(proc.target == -1, "No process has been attached");
+                        proc.update();
                         proc.dump();
                     },
                     "maps" => {
                         continue_if!(proc.target == -1, "No process has been attached");
                         
-                        let maps = rsdb::process::get_proc_maps(proc.target);
-                        continue_if!(maps.is_err(), "process: Failed to get memory maps");
-                        
-                        println!("{}", maps.unwrap());
+                        proc.update();
+                        proc.dump_maps();
                     },
                     _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
                 }
