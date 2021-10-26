@@ -39,10 +39,10 @@ fn prelaunch_checks() -> Result<(), &'static str> {
 fn rsdb_help() {
     println!("{}", "rsdb: Linux Debugger written in Rust".bright_yellow());
     println!("  help | ? => Print help");
-    println!("  attach {{PID | Package name}} => attach to the prcess");
+    println!("  attach [PID | Package name] => attach to the prcess");
     println!("    e.g) {} or {}", "attach 31337".bright_yellow(), "attach com.test.package".bright_yellow());
     println!("  detach => detach from the process");
-    println!("  info => info {{subcommand}}");
+    println!("  info => info [Subcommand]");
     println!("    regs => show registers");
     println!("    proc => show process informations");
     println!("    maps => show memory maps for the process");
@@ -83,7 +83,7 @@ fn main() -> Result<(), i32> {
         
         match command.as_str() {
             "attach" => {
-                continue_if!(commands.len() != 2, "Usage: attach {{PID | Package/Process name}}");
+                continue_if!(commands.len() != 2, "Usage: attach [PID | Package/Process name]");
                 continue_if!(proc.target != -1, "rsdb is already holding the process, detach first");
                 
                 let process = &commands[1];
@@ -113,7 +113,7 @@ fn main() -> Result<(), i32> {
                 unsafe { let _ = rsdb::ptrace::cont(proc.target); };
             },
             "info" => {
-                continue_if!(commands.len() != 2, "Usage: info {{regs | proc}}");
+                continue_if!(commands.len() != 2, "Usage: info [Subcommand], help for more details");
                 let arg = &commands[1];
                 match &arg[..] {
                     "regs" | "r" => {

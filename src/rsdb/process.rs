@@ -67,7 +67,7 @@ pub fn get_proc_exe(target: i32) -> Result<PathBuf, ()> {
     let mut path = PathBuf::from("/proc");
     path.push(target.to_string());
     path.push("exe");
-    match fs::canonicalize(path) {
+    match path.read_link() {
         Ok(dest) => Ok(dest),
         Err(_) => Err(()),
     }
