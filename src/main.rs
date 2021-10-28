@@ -45,7 +45,7 @@ fn rsdb_help() {
     println!("  info => info [Subcommand]");
     println!("    regs => show registers");
     println!("    proc => show process informations");
-    println!("    maps => show memory maps for the process");
+    println!("  vmmap | maps => show memory maps of the process");
     println!("  kill => send signal to the attached process");
     println!("  exit | quit => Exit rsdb");
 }
@@ -126,14 +126,14 @@ fn main() -> Result<(), i32> {
                         proc.update();
                         proc.dump();
                     },
-                    "maps" => {
-                        continue_if!(!proc.available(), "No process has been attached");
-                        
-                        proc.update();
-                        proc.dump_maps();
-                    },
                     _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
                 }
+            },
+            "vmmap" | "maps" => {
+                continue_if!(!proc.available(), "No process has been attached");
+                
+                proc.update();
+                proc.dump_maps();
             },
             "kill" => {
                 continue_if!(commands.len() != 1, "Usage: kill");
