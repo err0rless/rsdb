@@ -79,7 +79,7 @@ fn main() -> Result<(), i32> {
         match command.as_str() {
             "attach" => {
                 continue_if!(commands.len() != 2, "Usage: attach [PID | Package/Process name]");
-                continue_if!(proc.target != -1, "rsdb is already holding the process, detach first");
+                continue_if!(proc.available(), "rsdb is already holding the process, detach first");
                 
                 let process = &commands[1];
                 let new_target = match process.parse::<i32>() {
@@ -98,13 +98,13 @@ fn main() -> Result<(), i32> {
                 }
             },
             "detach" => {
-                continue_if!(proc.target == -1, "No process has been attached");
+                continue_if!(!proc.available(), "No process has been attached");
                 if unsafe { rsdb::ptrace::detach(proc.target).is_ok() } {
                     proc.clear();
                 }
             },
             "continue" | "c" => {
-                continue_if!(proc.target == -1, "No process has been attached");
+                continue_if!(!proc.available(), "No process has been attached");
                 unsafe { let _ = rsdb::ptrace::cont(proc.target); };
             },
             "info" => {
@@ -112,7 +112,7 @@ fn main() -> Result<(), i32> {
                 let arg = &commands[1];
                 match &arg[..] {
                     "regs" | "r" => {
-                        continue_if!(proc.target == -1, "No process has been attached");
+                        continue_if!(!proc.available(), "No process has been attached");
                         unsafe {
                             let regs = rsdb::ptrace::getregs(proc.target);
                             continue_if!(regs.is_err(), "ptrace: Failed to retrive registers!");
@@ -122,12 +122,12 @@ fn main() -> Result<(), i32> {
                         }
                     },
                     "proc" => {
-                        continue_if!(proc.target == -1, "No process has been attached");
+                        continue_if!(!proc.available(), "No process has been attached");
                         proc.update();
                         proc.dump();
                     },
                     "maps" => {
-                        continue_if!(proc.target == -1, "No process has been attached");
+                        continue_if!(!proc.available(), "No process has been attached");
                         
                         proc.update();
                         proc.dump_maps();
@@ -137,7 +137,7 @@ fn main() -> Result<(), i32> {
             },
             "kill" => {
                 continue_if!(commands.len() != 1, "Usage: kill");
-                continue_if!(proc.target == -1, "No process has been attached");
+                continue_if!(!proc.available(), "No process has been attached");
 
                 if unsafe { rsdb::ptrace::sigkill(proc.target).is_ok() } {
                     println!("Process killed successfully");
