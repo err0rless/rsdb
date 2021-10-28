@@ -45,6 +45,10 @@ impl Proc {
         };
     }
 
+    pub fn available(&self) -> bool {
+        self.target != -1
+    }
+ 
     pub fn update(&mut self) {
         self.init_with_pid(self.target);
     }

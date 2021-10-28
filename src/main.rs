@@ -144,7 +144,16 @@ fn main() -> Result<(), i32> {
                     proc.clear();
                 }
             },
-            "exit" | "quit" | "q" => break,
+            "exit" | "quit" | "q" => {
+                if proc.available() {
+                    println!("terminating the process({})...", proc.target);
+                    if unsafe { rsdb::ptrace::sigkill(proc.target).is_ok() } {
+                        println!("Process killed successfully");
+                        proc.clear();
+                    }
+                }
+                break
+            },
             "help" | "?" => rsdb_help(),
             "" => (),
             _ => println!("{}: {}", "Invalid command".red(), command),
