@@ -22,11 +22,19 @@ fn prelaunch_checks() -> Result<(), &'static str> {
     Ok(())
 }
 
+fn welcome_msg() {
+    println!("rsdb: Linux debugger written in Rust");
+    println!("  github: https://github.com/err0rless/rsdb");
+    println!("  Type 'help' or '?' for help");
+}
+
 fn main() -> Result<(), i32> {
     if let Err(err_code) = prelaunch_checks() {
         println!("failed to launch rsdb: {}", err_code.red());
         return Err(1);
     }
+
+    welcome_msg();
 
     // This holds target process ID, -1 if no process is attached
     let mut proc = rsdb::process::Proc::new();
