@@ -161,8 +161,7 @@ fn main() -> Result<(), i32> {
     let mut reader = Editor::<()>::new();
     let shell = String::from("rsdb ~> ".bright_blue().to_string());
     loop {
-        let line = reader.readline(shell.as_str());
-        match line {
+        match reader.readline(shell.as_str()) {
             Ok(buffer) => {
                 match rsdb_main(&mut proc, &buffer) {
                     MainLoopAction::Break => break,
@@ -172,11 +171,11 @@ fn main() -> Result<(), i32> {
             },
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
                 println!("rsdb interrupted, terminating...");
-                break;
+                break
             },
             Err(err) => {
                 println!("Failed to read commandline {:?}", err);
-                break;
+                break
             }
         }
     }
