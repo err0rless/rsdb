@@ -62,9 +62,8 @@ fn rsdb_main(proc: &mut rsdb::process::Proc, buffer: &String) -> MainLoopAction 
     let re = Regex::new(r"\s+").unwrap();
     let fullcmd = re.replace_all(buffer.trim(), " ");
     let commands = Vec::from_iter(fullcmd.split(" ").map(String::from));
-    let command = &commands[0];
     
-    match command.as_str() {
+    match commands[0].as_str() {
         "attach" => {
             continue_if!(commands.len() != 2, "Usage: attach [PID | Package/Process name]");
             continue_if!(proc.available(), "rsdb is already holding the process, detach first");
@@ -144,7 +143,7 @@ fn rsdb_main(proc: &mut rsdb::process::Proc, buffer: &String) -> MainLoopAction 
         },
         "help" | "?" => rsdb_help(),
         "" => (),
-        _ => println!("{}: {}", "Invalid command".red(), command),
+        invalid_cmd => println!("{}: {}", "Invalid command".red(), invalid_cmd),
     }
     MainLoopAction::None
 }
