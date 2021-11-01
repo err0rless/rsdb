@@ -14,11 +14,6 @@ fn prelaunch_checks() -> Result<(), &'static str> {
         Ok(_) => (),
         Err(_err) => return Err("rsdb failed to open '/proc/self/maps'"),
     }
-    // @TODO: remove this constraint, let rsdb runs a process as a child of it.
-    match Uid::effective().is_root() {
-        true => (),
-        false => return Err("Please run rsdb with root privilege"),
-    }
     Ok(())
 }
 
