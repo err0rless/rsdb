@@ -7,6 +7,23 @@ use rustyline::Editor;
 #[macro_use]
 mod rsdb;
 
+enum PlatformChecks {
+    UnsupportedOS,
+    UnsupportedArch,
+}
+
+fn platform_checks() -> Result<(), PlatformChecks> {
+    match env::consts::ARCH {
+        "x86_64" | "aarch64" => (),
+        _ => return Err(PlatformChecks::UnsupportedArch),
+    }
+    match env::consts::OS {
+        "linux" | "android" => (),
+        _ => return Err(PlatformChecks::UnsupportedOS),
+    }
+    Ok(())
+}
+
 fn welcome_msg() {
     println!("rsdb: Linux debugger written in Rust");
     println!("  github: https://github.com/err0rless/rsdb");
@@ -14,9 +31,15 @@ fn welcome_msg() {
 }
 
 fn main() -> Result<(), i32> {
-    match env::consts::OS {
-        "linux" | "android" => welcome_msg(),
-        _ => println!("rsdb only supports linux-based operating systems"),
+    match platform_checks() {
+        Err(err) => {
+            match err {
+                PlatformChecks::UnsupportedArch => println!("rsdb only supports: x86_64, AArch64"),
+                PlatformChecks::UnsupportedOS => println!("rsdb only supports: linux, android"),
+            }
+            return Err(1);
+        },
+        Ok(_) => welcome_msg(),
     }
 
     // This holds target process ID, -1 if no process is attached
