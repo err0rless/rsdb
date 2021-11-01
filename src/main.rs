@@ -1,21 +1,11 @@
-use std::fs;
 use colored::*;
-use nix::unistd::*;
+use std::env;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 #[macro_use]
 mod rsdb;
-
-fn prelaunch_checks() -> Result<(), &'static str> {
-    // rsdb needs '/proc' pseudo file system to run.
-    match fs::File::open("/proc/self/maps") {
-        Ok(_) => (),
-        Err(_err) => return Err("rsdb failed to open '/proc/self/maps'"),
-    }
-    Ok(())
-}
 
 fn welcome_msg() {
     println!("rsdb: Linux debugger written in Rust");
@@ -24,12 +14,10 @@ fn welcome_msg() {
 }
 
 fn main() -> Result<(), i32> {
-    if let Err(err_code) = prelaunch_checks() {
-        println!("failed to launch rsdb: {}", err_code.red());
-        return Err(1);
+    match env::consts::OS {
+        "linux" | "android" => welcome_msg(),
+        _ => println!("rsdb only supports linux-based operating systems"),
     }
-
-    welcome_msg();
 
     // This holds target process ID, -1 if no process is attached
     let mut proc = rsdb::process::Proc::new();
