@@ -27,15 +27,18 @@ fn platform_checks() -> Result<(), PlatformChecks> {
 fn welcome_msg() {
     println!("rsdb: Linux debugger written in Rust");
     println!("  github: https://github.com/err0rless/rsdb");
+    println!("  Arch  : {}", env::consts::ARCH);
+    println!("  OS    : {}", env::consts::OS);
     println!("  Type 'help' or '?' for help");
 }
 
 fn main() -> Result<(), i32> {
     match platform_checks() {
         Err(err) => {
+            println!("Unsupported platform: {}-{}", env::consts::ARCH, env::consts::OS);
             match err {
-                PlatformChecks::UnsupportedArch => println!("rsdb only supports: x86_64, AArch64"),
-                PlatformChecks::UnsupportedOS => println!("rsdb only supports: linux, android"),
+                PlatformChecks::UnsupportedArch => println!("  rsdb only supports: x86_64, AArch64"),
+                PlatformChecks::UnsupportedOS =>   println!("  rsdb only supports: linux, android"),
             }
             return Err(1);
         },
