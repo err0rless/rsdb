@@ -1,8 +1,6 @@
 use colored::*;
 use std::env;
-
 use rustyline::error::ReadlineError;
-use rustyline::Editor;
 
 #[macro_use]
 mod rsdb;
@@ -47,9 +45,9 @@ fn main() -> Result<(), i32> {
 
     // This holds target process ID, -1 if no process is attached
     let mut proc = rsdb::process::Proc::new();
-
-    let mut reader = Editor::<()>::new();
+    let mut reader = rustyline::Editor::<()>::new();
     let shell = String::from("rsdb ~> ".bright_blue().to_string());
+ 
     loop {
         match reader.readline(shell.as_str()) {
             Ok(buffer) => {

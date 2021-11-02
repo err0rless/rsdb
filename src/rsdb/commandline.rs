@@ -77,8 +77,7 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
         },
         "info" => {
             continue_if!(commands.len() != 2, "Usage: info [Subcommand], help for more details");
-            let arg = &commands[1];
-            match &arg[..] {
+            match commands[1].as_str() {
                 "regs" | "r" => {
                     continue_if!(!proc.available(), "No process has been attached");
                     unsafe {
@@ -94,7 +93,7 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
                     proc.update();
                     proc.dump();
                 },
-                _ => println!("{}'{}'", "info: invalid subcommand: ".red(), arg),
+                subcommand => println!("{}'{}'", "info: invalid subcommand: ".red(), subcommand),
             }
         },
         "vmmap" | "maps" => {

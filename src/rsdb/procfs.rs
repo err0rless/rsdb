@@ -1,6 +1,5 @@
 use std::path::*;
 use std::fs;
-
 use libc;
 
 const KILL_SUCCESS: i32 = 0;
