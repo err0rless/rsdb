@@ -2,6 +2,8 @@ use std::iter::*;
 use regex::Regex;
 use colored::*;
 
+use super::{process, procfs, ptrace};
+
 macro_rules! continue_if {
     ($cond:expr) => {
         if $cond {
@@ -36,7 +38,7 @@ fn rsdb_help() {
     println!("  exit | quit => Exit rsdb");
 }
 
-pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAction {
+pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
     let re = Regex::new(r"\s+").unwrap();
     let fullcmd = re.replace_all(buffer.trim(), " ");
     let commands = Vec::from_iter(fullcmd.split(" ").map(String::from));
@@ -50,12 +52,12 @@ pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAc
             let process = &commands[1];
             let new_target = match process.parse::<i32>() {
                 Ok(pid) => pid,
-                Err(_) => super::process::findpid(process),
+                Err(_) => procfs::findpid(process),
             };
-            continue_if!(unsafe { !super::process::check_pid(new_target) }, 
+            continue_if!(unsafe { !procfs::check_pid(new_target) }, 
                          "pid doesn't exist, check again");
 
-            match unsafe { super::ptrace::attach_wait(new_target) } {
+            match unsafe { ptrace::attach_wait(new_target) } {
                 Ok(_) => {
                     println!("Successfully attached to pid: {}", new_target);
                     proc.init_with_pid(new_target);
@@ -65,13 +67,13 @@ pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAc
         },
         "detach" => {
             continue_if!(!proc.available(), "No process has been attached");
-            if unsafe { super::ptrace::detach(proc.target).is_ok() } {
+            if unsafe { ptrace::detach(proc.target).is_ok() } {
                 proc.clear();
             }
         },
         "continue" | "c" => {
             continue_if!(!proc.available(), "No process has been attached");
-            unsafe { let _ = super::ptrace::cont(proc.target); };
+            unsafe { let _ = ptrace::cont(proc.target); };
         },
         "info" => {
             continue_if!(commands.len() != 2, "Usage: info [Subcommand], help for more details");
@@ -80,11 +82,11 @@ pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAc
                 "regs" | "r" => {
                     continue_if!(!proc.available(), "No process has been attached");
                     unsafe {
-                        let regs = super::ptrace::getregs(proc.target);
+                        let regs = ptrace::getregs(proc.target);
                         continue_if!(regs.is_err(), "ptrace: Failed to retrive registers!");
     
                         let regs = regs.unwrap();
-                        super::ptrace::dumpregs(&regs);
+                        ptrace::dumpregs(&regs);
                     }
                 },
                 "proc" => {
@@ -105,7 +107,7 @@ pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAc
             continue_if!(commands.len() != 1, "Usage: kill");
             continue_if!(!proc.available(), "No process has been attached");
 
-            if unsafe { super::ptrace::sigkill(proc.target).is_ok() } {
+            if unsafe { ptrace::sigkill(proc.target).is_ok() } {
                 println!("Process killed successfully");
                 proc.clear();
             }
@@ -113,7 +115,7 @@ pub fn rsdb_main(proc: &mut super::process::Proc, buffer: &String) -> MainLoopAc
         "exit" | "quit" | "q" => {
             if proc.available() {
                 println!("terminating the process({})...", proc.target);
-                if unsafe { super::ptrace::sigkill(proc.target).is_ok() } {
+                if unsafe { ptrace::sigkill(proc.target).is_ok() } {
                     println!("Process killed successfully");
                     proc.clear();
                 }
