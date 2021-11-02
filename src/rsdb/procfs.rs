@@ -56,7 +56,7 @@ pub unsafe fn check_pid(pid: i32) -> bool {
 
 pub fn findpid(from: &str) -> i32 {
     let proc = fs::read_dir("/proc")
-        .expect("Failed to open '.proc'");
+        .expect("Failed to open '/proc'");
     for path in proc {
         if path.is_err() { continue; }
 
