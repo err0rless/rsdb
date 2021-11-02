@@ -60,7 +60,7 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
             match unsafe { ptrace::attach_wait(new_target) } {
                 Ok(_) => {
                     println!("Successfully attached to pid: {}", new_target);
-                    proc.init_with_pid(new_target);
+                    proc.from(new_target);
                 },
                 Err(_) => (),
             }

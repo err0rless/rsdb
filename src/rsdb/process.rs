@@ -20,7 +20,7 @@ impl Proc {
         }
     }
 
-    pub fn init_with_pid(&mut self, pid: i32) {
+    pub fn from(&mut self, pid: i32) {
         self.target = pid;
         self.cmdline = match procfs::get_proc_cmdline(pid) {
             Ok(cmdline) => cmdline,
@@ -45,7 +45,7 @@ impl Proc {
     }
  
     pub fn update(&mut self) {
-        self.init_with_pid(self.target);
+        self.from(self.target);
     }
 
     pub fn dump(&self) {
