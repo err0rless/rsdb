@@ -23,11 +23,11 @@ fn platform_checks() -> Result<(), PlatformChecks> {
 }
 
 fn welcome_msg() {
-    println!("rsdb: Linux debugger written in Rust");
+    println!("rsdb, Linux debugger written in Rust");
     println!("  github: https://github.com/err0rless/rsdb");
     println!("  Arch  : {}", env::consts::ARCH);
     println!("  OS    : {}", env::consts::OS);
-    println!("  Type 'help' or '?' for help");
+    println!("-> Type 'help' or '?' for help");
 }
 
 fn main() -> Result<(), i32> {
