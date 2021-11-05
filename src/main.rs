@@ -1,7 +1,9 @@
-use colored::*;
 use std::env;
-use rustyline::error::ReadlineError;
 use std::str::FromStr;
+
+// Third-parties
+use colored::*;
+use rustyline::error::ReadlineError;
 use clap::{App, Arg, ArgMatches};
 
 #[macro_use]
