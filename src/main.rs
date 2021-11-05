@@ -13,15 +13,11 @@ enum PlatformChecks {
 }
 
 fn preprocess_arg_parser(proc: &mut rsdb::process::Proc, parser: &ArgMatches) {
+    // -p, --pid <PID> 
     let arg_pid = parser.value_of("pid").unwrap_or("-1");
-    let pid  = i32::from_str(arg_pid)
-        .unwrap_or_else(|e| -> i32 {
-            println!("invalid value for 'pid': '{}'", e);
-            -1
-        });
-    if pid != -1 {
-        proc.target = pid;
-        unsafe { let _ = rsdb::ptrace::attach_wait(proc.target); }
+    proc.target = match i32::from_str(arg_pid).unwrap_or(-1) {
+        -1 => -1,
+        pid => unsafe { rsdb::ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
     }
 }
 
