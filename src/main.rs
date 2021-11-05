@@ -48,7 +48,9 @@ fn main() -> Result<(), i32> {
             .author("err0rless <err0rless313@gmail.com>")    
             .version(env!("CARGO_PKG_VERSION"))
             .version_short("v")
-                .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'"))
+                .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'")
+                        .required(false)
+                )
             .get_matches();
 
     match platform_checks() {
