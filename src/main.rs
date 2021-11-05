@@ -1,6 +1,8 @@
 use colored::*;
 use std::env;
 use rustyline::error::ReadlineError;
+use std::str::FromStr;
+use clap::{App, Arg, ArgMatches};
 
 #[macro_use]
 mod rsdb;
@@ -8,6 +10,19 @@ mod rsdb;
 enum PlatformChecks {
     UnsupportedOS,
     UnsupportedArch,
+}
+
+fn preprocess_arg_parser(proc: &mut rsdb::process::Proc, parser: &ArgMatches) {
+    let arg_pid = parser.value_of("pid").unwrap_or("-1");
+    let pid  = i32::from_str(arg_pid)
+        .unwrap_or_else(|e| -> i32 {
+            println!("invalid value for 'pid': '{}'", e);
+            -1
+        });
+    if pid != -1 {
+        proc.target = pid;
+        unsafe { let _ = rsdb::ptrace::attach_wait(proc.target); }
+    }
 }
 
 fn platform_checks() -> Result<(), PlatformChecks> {
@@ -31,6 +46,19 @@ fn welcome_msg() {
 }
 
 fn main() -> Result<(), i32> {
+    // Commandline argument parser
+    let arg_parser: ArgMatches = 
+        App::new("rsdb: Linux debugger written in Rust")
+            .version("0.0.0")
+            .author("err0rless <err0rless313@gmail.com>")
+            .arg(Arg::with_name("pid")
+                .short("p")
+                .long("pid")
+                .value_name("PID")
+                .takes_value(true)
+                .help("Attach to a specific Process ID"))
+            .get_matches();
+
     match platform_checks() {
         Err(err) => {
             println!("Unsupported platform: {}-{}", env::consts::ARCH, env::consts::OS);
@@ -43,8 +71,11 @@ fn main() -> Result<(), i32> {
         Ok(_) => welcome_msg(),
     }
 
-    // This holds target process ID, -1 if no process is attached
+    // Singleton process object, it holds only one process.
     let mut proc = rsdb::process::Proc::new();
+    preprocess_arg_parser(&mut proc, &arg_parser);
+
+    // Commandline prerequisites for rustyline
     let mut reader = rustyline::Editor::<()>::new();
     let shell = String::from("rsdb ~> ".bright_blue().to_string());
  
