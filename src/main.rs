@@ -54,8 +54,10 @@ fn main() -> Result<(), i32> {
         Err(err) => {
             println!("Unsupported platform: {}-{}", env::consts::ARCH, env::consts::OS);
             match err {
-                PlatformChecks::UnsupportedArch => println!("  rsdb only supports: x86_64, AArch64"),
-                PlatformChecks::UnsupportedOS =>   println!("  rsdb only supports: linux, android"),
+                PlatformChecks::UnsupportedArch => 
+                    println!("  rsdb only supports: x86_64, AArch64"),
+                PlatformChecks::UnsupportedOS =>   
+                    println!("  rsdb only supports: linux, android"),
             }
             return Err(1);
         },
