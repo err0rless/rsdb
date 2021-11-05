@@ -47,12 +47,7 @@ fn main() -> Result<(), i32> {
         App::new("rsdb: Linux debugger written in Rust")
             .version("0.0.0")
             .author("err0rless <err0rless313@gmail.com>")
-            .arg(Arg::with_name("pid")
-                .short("p")
-                .long("pid")
-                .value_name("PID")
-                .takes_value(true)
-                .help("Attach to a specific Process ID"))
+            .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'"))
             .get_matches();
 
     match platform_checks() {
