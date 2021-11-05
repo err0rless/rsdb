@@ -45,9 +45,10 @@ fn main() -> Result<(), i32> {
     // Commandline argument parser
     let arg_parser: ArgMatches = 
         App::new("rsdb: Linux debugger written in Rust")
-            .version("0.0.0")
-            .author("err0rless <err0rless313@gmail.com>")
-            .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'"))
+            .author("err0rless <err0rless313@gmail.com>")    
+            .version(env!("CARGO_PKG_VERSION"))
+            .version_short("v")
+                .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'"))
             .get_matches();
 
     match platform_checks() {
