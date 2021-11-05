@@ -43,6 +43,33 @@ fn welcome_msg() {
     println!("-> Type 'help' or '?' for help");
 }
 
+fn enter_cli(proc: &mut rsdb::process::Proc) {
+    // Commandline prerequisites for rustyline
+    let mut reader = rustyline::Editor::<()>::new();
+    let shell = String::from("rsdb ~> ".bright_blue().to_string());
+
+    // Main commandline loop
+    loop {
+        match reader.readline(shell.as_str()) {
+            Ok(buffer) => {
+                match rsdb::commandline::rsdb_main(proc, &buffer) {
+                    rsdb::commandline::MainLoopAction::Break => break,
+                    rsdb::commandline::MainLoopAction::Continue => continue,
+                    _ => (),
+                }
+            },
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
+                println!("rsdb interrupted, terminating...");
+                break
+            },
+            Err(err) => {
+                println!("Failed to read commandline {:?}", err);
+                break
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), i32> {
     // Commandline argument parser
     let arg_parser: ArgMatches = 
@@ -72,29 +99,6 @@ fn main() -> Result<(), i32> {
     // Singleton process object, it holds only one process.
     let mut proc = rsdb::process::Proc::new();
     preprocess_arg_parser(&mut proc, &arg_parser);
-
-    // Commandline prerequisites for rustyline
-    let mut reader = rustyline::Editor::<()>::new();
-    let shell = String::from("rsdb ~> ".bright_blue().to_string());
- 
-    loop {
-        match reader.readline(shell.as_str()) {
-            Ok(buffer) => {
-                match rsdb::commandline::rsdb_main(&mut proc, &buffer) {
-                    rsdb::commandline::MainLoopAction::Break => break,
-                    rsdb::commandline::MainLoopAction::Continue => continue,
-                    _ => (),
-                }
-            },
-            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
-                println!("rsdb interrupted, terminating...");
-                break
-            },
-            Err(err) => {
-                println!("Failed to read commandline {:?}", err);
-                break
-            }
-        }
-    }
+    enter_cli(&mut proc);
     Ok(())
 }
