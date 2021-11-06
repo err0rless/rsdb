@@ -12,14 +12,13 @@ const NULL: *mut i32 = ptr::null_mut();
 macro_rules! rsdb_ptrace {
     ($($ptrace_args: expr),*) => {
         /* unsafe */ {
-            let ret = libc::ptrace($($ptrace_args), *);
-            if let Err(no) = Errno::result(ret) {
-                let errstr: String = format!("ptrace: {}", no.desc());
-                println!("{}", errstr.red());
-                Err(())
-            }
-            else {
-                Ok(ret)
+            match Errno::result(libc::ptrace($($ptrace_args), *)) {
+                Ok(ret) => Ok(ret),
+                Err(no) => {
+                    let errstr: String = format!("ptrace: {}", no.desc());
+                    println!("{}", errstr.red());
+                    Err(())
+                },
             }
         }
     };

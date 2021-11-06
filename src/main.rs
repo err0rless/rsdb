@@ -1,4 +1,5 @@
 use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 // Third-parties
@@ -20,6 +21,25 @@ fn preprocess_arg_parser(proc: &mut rsdb::process::Proc, parser: &ArgMatches) {
     proc.target = match i32::from_str(arg_pid).unwrap_or(-1) {
         -1 => -1,
         pid => unsafe { rsdb::ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
+    };
+
+    // -f, --file <PATH>
+    proc.file = match parser.value_of("file").unwrap_or("") {
+        "" => PathBuf::from(""),
+        file => {
+            let filebuf = PathBuf::from(file);
+            match filebuf.exists() || filebuf.is_file() {
+                true => {
+                    println!("Path to file is available: '{}'", file);
+                    println!("  try 'run' to spawn the program");
+                    filebuf
+                },
+                false => {
+                    println!("Path to file is NOT available: '{}'", file);
+                    PathBuf::from("")
+                }
+            }
+        },
     }
 }
 
@@ -77,8 +97,16 @@ fn main() -> Result<(), i32> {
             .author("err0rless <err0rless313@gmail.com>")    
             .version(env!("CARGO_PKG_VERSION"))
             .version_short("v")
-                .arg(Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'")
+                .arg(
+                    Arg::from_usage("-p, --pid <PID> 'Attach to a Specific Process ID'")
                         .required(false)
+                        .conflicts_with("file")
+                )
+                .arg(
+                    Arg::from_usage(concat!("-f, --file <PATH> 'Spawn a specific executable, ", 
+                                            "empty string will be ignored'"))
+                        .required(false)
+                        .conflicts_with("pid")
                 )
             .get_matches();
 

@@ -1,8 +1,11 @@
 use std::path::*;
-use super::procfs;
+use nix::NixPath;
+
+use super::{procfs, ptrace};
 
 pub struct Proc {
     pub target: i32,
+    pub file: PathBuf,
     cmdline: String,
     exe: PathBuf,
     cwd: PathBuf,
@@ -13,6 +16,7 @@ impl Proc {
     pub fn new() -> Proc {
         Proc { 
             target: -1, 
+            file: PathBuf::new(),
             cmdline: String::from(""), 
             exe: PathBuf::new(), 
             cwd: PathBuf::new(),
@@ -38,6 +42,29 @@ impl Proc {
             Ok(maps) => maps,
             Err(_) => String::from(""),
         };
+    }
+
+    pub fn file_available(&self) -> bool {
+        !self.file.is_empty()
+    }
+    
+    // Spawn, attach and wait
+    pub fn spawn_file(&mut self) {
+        let spawn_child = 
+            std::process::Command::new(self.file.as_path())
+                .spawn();
+        match spawn_child {
+            Ok(child) => {
+                self.target = child.id() as i32;
+
+                println!("Successfully spawned a child with");
+                println!("  path: {}", self.file.canonicalize().unwrap().display());
+                println!("  pid : {}", self.target);
+
+                unsafe { let _ = ptrace::attach_wait(self.target); };
+            },
+            Err(e) => println!("Failed to spawn: {}", e),
+        }
     }
 
     pub fn available(&self) -> bool {
