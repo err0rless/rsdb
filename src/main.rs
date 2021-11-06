@@ -96,7 +96,7 @@ fn main() -> Result<(), i32> {
     // Commandline argument parser
     let arg_parser: ArgMatches = 
         App::new("rsdb: Linux debugger written in Rust")
-            .author("err0rless <err0rless313@gmail.com>")    
+            .author(env!("CARGO_PKG_AUTHORS"))    
             .version(env!("CARGO_PKG_VERSION"))
             .version_short("v")
                 .arg(
