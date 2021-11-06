@@ -7,10 +7,12 @@ Linux debugger written in Rust
   - [ ] Entry point
   - [ ] Section
   - [ ] Symbol
-  - [ ] Instructions
+- [ ] Disassembler
+  - [ ] x86_64
+  - [ ] AArch64 
 - [ ] Signal handling
 - [ ] Support addtional platforms / environments
-  - [ ] ARM64
+  - [ ] AArch64
   - [ ] Android
 - [ ] Breakpoints
   - [ ] Conditional breakpoints
