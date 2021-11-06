@@ -95,7 +95,7 @@ fn enter_cli(proc: &mut rsdb::process::Proc) {
 fn main() -> Result<(), i32> {
     // Commandline argument parser
     let arg_parser: ArgMatches = 
-        App::new("rsdb: Linux debugger written in Rust")
+        App::new(env!("CARGO_PKG_DESCRIPTION"))
             .author(env!("CARGO_PKG_AUTHORS"))    
             .version(env!("CARGO_PKG_VERSION"))
             .version_short("v")
