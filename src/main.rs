@@ -28,7 +28,7 @@ fn preprocess_arg_parser(proc: &mut rsdb::process::Proc, parser: &ArgMatches) {
         "" => PathBuf::from(""),
         file => {
             let filebuf = PathBuf::from(file);
-            match filebuf.exists() || filebuf.is_file() {
+            match filebuf.exists() && filebuf.is_file() {
                 true => {
                     println!("Path to file is available: '{}'", file);
                     println!("  try 'run' to spawn the program");
