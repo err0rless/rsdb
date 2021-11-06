@@ -64,6 +64,8 @@ fn welcome_msg() {
 }
 
 fn enter_cli(proc: &mut rsdb::process::Proc) {
+    use rsdb::command::MainLoopAction;
+
     // Commandline prerequisites for rustyline
     let mut reader = rustyline::Editor::<()>::new();
     let shell = String::from("rsdb ~> ".bright_blue().to_string());
@@ -73,8 +75,8 @@ fn enter_cli(proc: &mut rsdb::process::Proc) {
         match reader.readline(shell.as_str()) {
             Ok(buffer) => {
                 match rsdb::commandline::rsdb_main(proc, &buffer) {
-                    rsdb::commandline::MainLoopAction::Break => break,
-                    rsdb::commandline::MainLoopAction::Continue => continue,
+                    MainLoopAction::Break => break,
+                    MainLoopAction::Continue => continue,
                     _ => (),
                 }
             },

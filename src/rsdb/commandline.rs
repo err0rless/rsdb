@@ -1,11 +1,9 @@
 use std::iter::*;
-use std::mem;
-use libc::WEXITSTATUS;
 use regex::Regex;
 use colored::*;
 
-
-use super::{process, procfs, ptrace};
+use super::{process, procfs, command};
+use command::MainLoopAction;
 
 macro_rules! continue_if {
     ($cond:expr) => {
@@ -21,13 +19,7 @@ macro_rules! continue_if {
     };
 }
 
-pub enum MainLoopAction {
-    None,
-    Break,
-    Continue,
-}
-
-fn rsdb_help() {
+fn rsdb_help() -> MainLoopAction {
     println!("{}", "rsdb: Linux Debugger written in Rust".bright_yellow());
     println!("  help | ? => Print help");
     println!("  attach [PID | Package name] => attach to the prcess");
@@ -41,6 +33,7 @@ fn rsdb_help() {
     println!("  vmmap | maps => show memory maps of the process");
     println!("  kill => send signal to the attached process");
     println!("  exit | quit => Exit rsdb");
+    MainLoopAction::None
 }
 
 pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
@@ -48,16 +41,6 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
     let fullcmd = re.replace_all(buffer.trim(), " ");
     let commands = Vec::from_iter(fullcmd.split(" ").map(String::from));
     let command = &commands[0];
-    
-    let get_strsig = |signum: i32| -> &str {
-        unsafe {
-            let sigcstr = libc::strsignal(signum);
-            let sigstr = std::ffi::CStr::from_ptr(sigcstr)
-                .to_str()
-                .unwrap_or("UNDEFINED");
-            sigstr
-        }
-    };
 
     match command.as_str() {
         "attach" => {
@@ -71,116 +54,51 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
             };
             continue_if!(unsafe { !procfs::check_pid(new_target) }, 
                          "pid doesn't exist, check again");
-
-            match unsafe { ptrace::attach_wait(new_target) } {
-                Ok(_) => {
-                    println!("Successfully attached to pid: {}", new_target);
-                    proc.from(new_target);
-                },
-                Err(_) => (),
-            }
+            command::attach(proc, new_target)
         },
         "detach" => {
             continue_if!(!proc.available(), "No process has been attached");
-            if unsafe { ptrace::detach(proc.target).is_ok() } {
-                proc.clear();
-            }
+            command::detach(proc)
         },
         "continue" | "c" => {
             continue_if!(!proc.available(), "No process has been attached");
-            unsafe {
-                let _ = ptrace::cont(proc.target);
-                let mut status = mem::MaybeUninit::<libc::c_int>::uninit();
-                libc::waitpid(proc.target, status.as_mut_ptr() as *const _ as *mut libc::c_int, 0);
-
-                // catching signal from the process
-                match status.assume_init() {
-                    s if libc::WIFEXITED(s) => {
-                        proc.clear();
-                        println!("\nProgram terminated with status: {}", WEXITSTATUS(s));
-                    },
-                    s if libc::WIFSTOPPED(s) => {
-                        let stopsig = libc::WSTOPSIG(s);
-                        let sigstr = get_strsig(stopsig);
-
-                        match stopsig {
-                            libc::SIGTERM => {
-                                ptrace::sigkill(proc.target).unwrap();
-                                proc.clear();
-
-                                println!("\nProgram terminated with signal {}, {}", stopsig, sigstr);
-                            },
-                            _ => println!("\nProgram stopped with signal {}, {}", stopsig, sigstr),
-                        }
-                    },
-                    s if libc::WIFSIGNALED(s) => {
-                        match s {
-                            libc::SIGKILL => {
-                                println!("\nProgram killed from signal");
-                                proc.clear();
-                            },
-                            _ => println!("Program received signal {}", get_strsig(s)),
-                        }
-                    },
-                    s => println!("\nProgram received status {}", s),
-                }
-            };
+            command::cont(proc)
         },
         "run" | "r" => {
             continue_if!(proc.available(), "rsdb is already holding the process, detach first");
             continue_if!(!proc.file_available(), "File is not available!");
-
-            proc.spawn_file();
+            command::run(proc)
         },
         "info" => {
             continue_if!(commands.len() != 2, "Usage: info [Subcommand], help for more details");
             match commands[1].as_str() {
                 "regs" | "r" => {
                     continue_if!(!proc.available(), "No process has been attached");
-                    unsafe {
-                        let regs = ptrace::getregs(proc.target);
-                        continue_if!(regs.is_err(), "ptrace: Failed to retrive registers!");
-    
-                        let regs = regs.unwrap();
-                        ptrace::dumpregs(&regs);
-                    }
+                    command::info::regs(proc);
                 },
                 "proc" => {
                     continue_if!(!proc.available(), "No process has been attached");
-                    proc.update();
-                    proc.dump();
+                    command::info::proc(proc);
                 },
                 subcommand => println!("{}'{}'", "info: invalid subcommand: ".red(), subcommand),
             }
+            MainLoopAction::None
         },
         "vmmap" | "maps" => {
             continue_if!(!proc.available(), "No process has been attached");
-            
-            proc.update();
-            proc.dump_maps();
+            command::vmmap(proc)
         },
         "kill" => {
             continue_if!(commands.len() != 1, "Usage: kill");
             continue_if!(!proc.available(), "No process has been attached");
-
-            if unsafe { ptrace::sigkill(proc.target).is_ok() } {
-                println!("Process killed successfully");
-                proc.clear();
-            }
+            command::kill(proc)
         },
-        "exit" | "quit" | "q" => {
-            if proc.available() {
-                println!("terminating the process({})...", proc.target);
-                if unsafe { ptrace::sigkill(proc.target).is_ok() } {
-                    println!("Process killed successfully");
-                    proc.clear();
-                }
-            }
-            return MainLoopAction::Break;
-        },
+        "exit" | "quit" | "q" => command::quit(proc),
         "help" | "?" => rsdb_help(),
-        "" => (),
-        invalid_cmd => println!("{}: {}", "Invalid command".red(), invalid_cmd),
+        "" => MainLoopAction::None,
+        invalid_cmd => {
+            println!("{}: {}", "Invalid command".red(), invalid_cmd);
+            MainLoopAction::None
+        },
     }
-    MainLoopAction::None
 }
