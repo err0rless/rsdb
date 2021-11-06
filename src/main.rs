@@ -57,9 +57,9 @@ fn platform_checks() -> Result<(), PlatformChecks> {
 
 fn welcome_msg() {
     println!("rsdb, Linux debugger written in Rust");
-    println!("  github: {}", env!("CARGO_PKG_REPOSITORY"));
-    println!("  Arch  : {}", env::consts::ARCH);
-    println!("  OS    : {}", env::consts::OS);
+    println!("  Repo: {}", env!("CARGO_PKG_REPOSITORY"));
+    println!("  Arch: {}", env::consts::ARCH);
+    println!("  OS  : {}", env::consts::OS);
     println!("-> Type 'help' or '?' for help");
 }
 
