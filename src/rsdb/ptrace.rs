@@ -59,21 +59,21 @@ pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, ()> {
 
 pub fn dumpregs(regs: &user_regs_struct) {
     println!("Dump Registers");
-    println!("  rax: {:16x}", regs.rax);
-    println!("  rbx: {:16x}", regs.rbx);
-    println!("  rcx: {:16x}", regs.rcx);
-    println!("  rdx: {:16x}", regs.rdx);
-    println!("  rdi: {:16x}", regs.rdi);
-    println!("  rdx: {:16x}", regs.rdx);
-    println!("  r8 : {:16x}", regs.r8);
-    println!("  r9 : {:16x}", regs.r9);
-    println!("  r10: {:16x}", regs.r10);
-    println!("  r11: {:16x}", regs.r11);
-    println!("  r12: {:16x}", regs.r12);
-    println!("  r13: {:16x}", regs.r13);
-    println!("  r14: {:16x}", regs.r14);
-    println!("  r15: {:16x}", regs.r15);
-    println!("  rsp: {:16x}", regs.rsp);
-    println!("  rbp: {:16x}", regs.rbp);
-    println!("  rip: {:16x}", regs.rip);
+    println!("  rax: {:16x} {:16}", regs.rax, regs.rax);
+    println!("  rbx: {:16x} {:16}", regs.rbx, regs.rbx);
+    println!("  rcx: {:16x} {:16}", regs.rcx, regs.rcx);
+    println!("  rdx: {:16x} {:16}", regs.rdx, regs.rdx);
+    println!("  rdi: {:16x} {:16}", regs.rdi, regs.rdi);
+    println!("  rdx: {:16x} {:16}", regs.rdx, regs.rdx);
+    println!("  r8 : {:16x} {:16}", regs.r8, regs.r8);
+    println!("  r9 : {:16x} {:16}", regs.r9, regs.r9);
+    println!("  r10: {:16x} {:16}", regs.r10, regs.r10);
+    println!("  r11: {:16x} {:16}", regs.r11, regs.r11);
+    println!("  r12: {:16x} {:16}", regs.r12, regs.r12);
+    println!("  r13: {:16x} {:16}", regs.r13, regs.r13);
+    println!("  r14: {:16x} {:16}", regs.r14, regs.r14);
+    println!("  r15: {:16x} {:16}", regs.r15, regs.r15);
+    println!("  rsp: {:16x} {:16}", regs.rsp, regs.rsp);
+    println!("  rbp: {:16x} {:16}", regs.rbp, regs.rbp);
+    println!("  rip: {:16x} {:16}", regs.rip, regs.rip);
 }
