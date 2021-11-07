@@ -1,5 +1,6 @@
-use std::path::*;
-use nix::NixPath;
+use std::{os::unix::prelude::CommandExt, path::*};
+use nix::{NixPath};
+use linux_personality::personality;
 
 use super::{procfs, ptrace};
 
@@ -50,21 +51,28 @@ impl Proc {
     
     // Spawn, attach and wait
     pub fn spawn_file(&mut self) {
-        let spawn_child = 
-            std::process::Command::new(self.file.as_path())
-                .spawn();
-        match spawn_child {
-            Ok(child) => {
-                self.target = child.id() as i32;
+        match unsafe{ nix::unistd::fork() } {
+            Ok(nix::unistd::ForkResult::Child) => {
+                // ptrace(PTRACE_TRACEME, ...);
+                nix::sys::ptrace::traceme().unwrap();
 
+                // disable ASLR
+                personality(linux_personality::ADDR_NO_RANDOMIZE).unwrap();
+
+                // run executable on this process
+                std::process::Command::new(self.file.as_path())
+                    .exec();
+            },
+            Ok(nix::unistd::ForkResult::Parent { child }) => {
+                self.target = child.as_raw();
                 println!("Successfully spawned a child with");
                 println!("  path: {}", self.file.canonicalize().unwrap().display());
                 println!("  pid : {}", self.target);
-
-                unsafe { let _ = ptrace::attach_wait(self.target); };
             },
-            Err(e) => println!("Failed to spawn: {}", e),
-        }
+            Err(err) => {
+                panic!("[main] fork() failed: {}", err);
+            }
+        };
     }
 
     pub fn available(&self) -> bool {
