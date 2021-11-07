@@ -54,10 +54,15 @@ impl Proc {
         match unsafe{ nix::unistd::fork() } {
             Ok(nix::unistd::ForkResult::Child) => {
                 // ptrace(PTRACE_TRACEME, ...);
-                nix::sys::ptrace::traceme().unwrap();
+                nix::sys::ptrace::traceme().unwrap_or_else(|e| {
+                    println!("ptrace::traceme() failed with code {}", e);
+                });
 
                 // disable ASLR
-                personality(linux_personality::ADDR_NO_RANDOMIZE).unwrap();
+                personality(linux_personality::ADDR_NO_RANDOMIZE).unwrap_or_else(|_| {
+                    println!("failed to disable ASLR");
+                    linux_personality::Personality::empty()
+                });
 
                 // run executable on this process
                 std::process::Command::new(self.file.as_path())
@@ -70,9 +75,9 @@ impl Proc {
                 println!("  pid : {}", self.target);
             },
             Err(err) => {
-                panic!("[main] fork() failed: {}", err);
+                panic!("Fork Failed: {}", err);
             }
-        };
+        }
     }
 
     pub fn available(&self) -> bool {
