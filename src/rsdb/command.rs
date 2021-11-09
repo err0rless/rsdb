@@ -92,8 +92,17 @@ pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
 }
 
 pub fn run(proc: &mut process::Proc) -> MainLoopAction {
-    proc.spawn_file();
-    MainLoopAction::None
+    match proc.spawn_file() {
+        -1 => MainLoopAction::None,
+        child_pid => {
+            // Wait parent until it's ready
+            nix::sys::wait::wait().unwrap();
+            proc.target = child_pid;
+
+            // Continuing execution of the child
+            super::command::cont(proc)
+        },
+    }
 }
 
 pub fn vmmap(proc: &mut process::Proc) -> MainLoopAction {

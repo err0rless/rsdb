@@ -50,7 +50,7 @@ impl Proc {
     }
     
     // Spawn, attach and wait
-    pub fn spawn_file(&mut self) {
+    pub fn spawn_file(&mut self) -> i32 {
         match unsafe{ nix::unistd::fork() } {
             Ok(nix::unistd::ForkResult::Child) => {
                 // ptrace(PTRACE_TRACEME, ...);
@@ -67,15 +67,21 @@ impl Proc {
                 // run executable on this process
                 std::process::Command::new(self.file.as_path())
                     .exec();
+
+                // this is child process
+                -1
             },
             Ok(nix::unistd::ForkResult::Parent { child }) => {
                 self.target = child.as_raw();
                 println!("Successfully spawned a child with");
                 println!("  path: {}", self.file.canonicalize().unwrap().display());
                 println!("  pid : {}", self.target);
+
+                child.as_raw()
             },
             Err(err) => {
-                panic!("Fork Failed: {}", err);
+                println!("Fork failed with error: {}", err);
+                -1
             }
         }
     }
