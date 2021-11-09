@@ -3,20 +3,6 @@ use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
 use super::{process, ptrace};
 
-macro_rules! continue_if {
-    ($cond:expr) => {
-        if $cond {
-            return command::MainLoopAction::Continue;
-        }
-    };
-    ($cond:expr, $msg:tt) => {
-        if $cond {
-            println!("{}", $msg.red());
-            return MainLoopAction::Continue;
-        }
-    };
-}
-
 pub enum MainLoopAction {
     None,
     Break,
@@ -71,6 +57,9 @@ pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
                 },
                 _ => {
                     println!("\nProgram Stopped with signal {}, {}", signum, sigstr);
+                    proc.getreg("rip")
+                        .map(|pc| { println!("Stopped at 0x{:x}", pc); })
+                        .unwrap_or_default();
                 },
             }
         },
@@ -134,14 +123,7 @@ pub mod info {
     use super::*;
 
     pub fn regs(proc: &mut process::Proc) -> MainLoopAction {
-        unsafe {
-            let regs = ptrace::getregs(proc.target);
-            if regs.is_err() {  }
-            continue_if!(regs.is_err(), "ptrace: Failed to retrive registers!");
-
-            let regs = regs.unwrap();
-            ptrace::dumpregs(&regs);
-        }
+        proc.dump_regs();
         MainLoopAction::None
     }
 

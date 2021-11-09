@@ -1,4 +1,6 @@
-use std::{os::unix::prelude::CommandExt, path::*};
+use std::path::*;
+use std::os::unix::prelude::CommandExt;
+use libc::user_regs_struct;
 use linux_personality::personality;
 
 use super::procfs;
@@ -108,6 +110,40 @@ impl Proc {
 
     pub fn dump_maps(&self) {
         println!("{}", self.maps);
+    }
+
+    pub fn getregs(&self) -> Result<user_regs_struct, () >{
+        unsafe { super::ptrace::getregs(self.target) }
+    }
+
+    pub fn getreg(&self, regname: &str) -> Result<u64, ()> {
+        match self.getregs() {
+            Ok(regs) => {
+                match regname {
+                    "rax" => Ok(regs.rax),
+                    "rbx" => Ok(regs.rbx),
+                    "rcx" => Ok(regs.rcx),
+                    "rdx" => Ok(regs.rdx),
+                    "r8"  => Ok(regs.r8),
+                    "r9"  => Ok(regs.r9),
+                    "r10" => Ok(regs.r10),
+                    "r11" => Ok(regs.r11),
+                    "r12" => Ok(regs.r12),
+                    "r13" => Ok(regs.r13),
+                    "r14" => Ok(regs.r14),
+                    "r15" => Ok(regs.r15),
+                    "rsp" => Ok(regs.rsp),
+                    "rbp" => Ok(regs.rbp),
+                    "rip" => Ok(regs.rip),
+                    _ => Err(()),
+                }
+            }
+            Err(_) => Err(()),
+        }
+    }
+
+    pub fn dump_regs(&self) {
+        super::ptrace::dumpregs(&self.getregs().unwrap());
     }
 
     pub fn release(&mut self) {
