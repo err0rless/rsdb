@@ -52,42 +52,40 @@ pub fn detach(proc: &mut process::Proc) -> MainLoopAction {
 }
 
 pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
-    unsafe {
-        ptrace::cont(proc.target).unwrap_or(-1);
+    unsafe { ptrace::cont(proc.target).unwrap_or(-1); }
 
-        // catching signal from the process
-        match nix::sys::wait::waitpid(proc.get_pid(), None) {
-            Ok(WaitStatus::Exited(_, exit_status)) => {
-                println!("\nProgram terminated with status: {}", exit_status);
-                proc.release();
-            },
-            Ok(WaitStatus::Stopped(_, signum)) => {
-                let sigstr = get_strsig(signum as i32);
-                match signum {
-                    Signal::SIGTERM => {
-                        ptrace::sigkill(proc.target).unwrap();
+    // catching signal from the process
+    match nix::sys::wait::waitpid(proc.get_pid(), None) {
+        Ok(WaitStatus::Exited(_, exit_status)) => {
+            println!("\nProgram terminated with status: {}", exit_status);
+            proc.release();
+        },
+        Ok(WaitStatus::Stopped(_, signum)) => {
+            let sigstr = get_strsig(signum as i32);
+            match signum {
+                Signal::SIGTERM => {
+                    unsafe { ptrace::sigkill(proc.target).unwrap(); }
 
-                        println!("\nProgram terminated with signal {}, {}", signum, sigstr);
-                        proc.release();
-                    },
-                    _ => {
-                        println!("\nProgram Stopped with signal {}, {}", signum, sigstr);
-                    },
-                }
-            },
-            Ok(WaitStatus::Signaled(_, signum, _)) => {
-                let sigstr = get_strsig(signum as i32);
-                match signum {
-                    Signal::SIGKILL => {
-                        println!("\nProgram received {}, {}, terminating...", signum, sigstr);
-                        proc.release(); 
-                    },
-                    _ => println!("Signaled {}", signum),
-                }
-            },
-            Ok(status) => println!("\nProgram received status: {:?}", status),
-            Err(err) => println!("waitpid failed: {:?}", err),
-        }
+                    println!("\nProgram terminated with signal {}, {}", signum, sigstr);
+                    proc.release();
+                },
+                _ => {
+                    println!("\nProgram Stopped with signal {}, {}", signum, sigstr);
+                },
+            }
+        },
+        Ok(WaitStatus::Signaled(_, signum, _)) => {
+            let sigstr = get_strsig(signum as i32);
+            match signum {
+                Signal::SIGKILL => {
+                    println!("\nProgram received {}, {}, terminating...", signum, sigstr);
+                    proc.release(); 
+                },
+                _ => println!("Signaled {}", signum),
+            }
+        },
+        Ok(status) => println!("\nProgram received status: {:?}", status),
+        Err(err) => println!("waitpid failed: {:?}", err),
     }
     MainLoopAction::None
 }
