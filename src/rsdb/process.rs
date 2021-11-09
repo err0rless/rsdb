@@ -1,8 +1,9 @@
 use std::{os::unix::prelude::CommandExt, path::*};
-use nix::{NixPath};
 use linux_personality::personality;
 
-use super::{procfs, ptrace};
+use super::procfs;
+
+pub type PidType = nix::unistd::Pid;
 
 pub struct Proc {
     pub target: i32,
@@ -46,7 +47,11 @@ impl Proc {
     }
 
     pub fn file_available(&self) -> bool {
-        !self.file.is_empty()
+        !self.file.to_str().unwrap().is_empty()
+    }
+
+    pub fn get_pid(&self) -> nix::unistd::Pid {
+        PidType::from_raw(self.target)
     }
     
     // Spawn, attach and wait
@@ -105,7 +110,9 @@ impl Proc {
         println!("{}", self.maps);
     }
 
-    pub fn clear(&mut self) {
+    pub fn release(&mut self) {
+        use colored::Colorize;
+        println!("{}{}", "Releasing process: ".red(), self.target);
         self.target = -1;
         self.cmdline.clear();
         self.exe.clear();

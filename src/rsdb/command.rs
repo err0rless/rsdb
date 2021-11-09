@@ -1,5 +1,6 @@
-use std::mem;
 use colored::*;
+use nix::sys::wait::WaitStatus;
+use nix::sys::signal::Signal;
 use super::{process, ptrace};
 
 macro_rules! continue_if {
@@ -45,47 +46,47 @@ pub fn attach(proc: &mut process::Proc, newtarget: i32) -> MainLoopAction {
 
 pub fn detach(proc: &mut process::Proc) -> MainLoopAction {
     if unsafe { ptrace::detach(proc.target).is_ok() } {
-        proc.clear();
+        proc.release();
     }
     MainLoopAction::None
 }
 
 pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
     unsafe {
-        let _ = ptrace::cont(proc.target);
-        let mut status = mem::MaybeUninit::<libc::c_int>::uninit();
-        libc::waitpid(proc.target, status.as_mut_ptr() as *const _ as *mut libc::c_int, 0);
+        ptrace::cont(proc.target).unwrap_or(-1);
 
         // catching signal from the process
-        match status.assume_init() {
-            s if libc::WIFEXITED(s) => {
-                proc.clear();
-                println!("\nProgram terminated with status: {}", libc::WEXITSTATUS(s));
+        match nix::sys::wait::waitpid(proc.get_pid(), None) {
+            Ok(WaitStatus::Exited(_, exit_status)) => {
+                println!("\nProgram terminated with status: {}", exit_status);
+                proc.release();
             },
-            s if libc::WIFSTOPPED(s) => {
-                let stopsig = libc::WSTOPSIG(s);
-                let sigstr = get_strsig(stopsig);
-
-                match stopsig {
-                    libc::SIGTERM => {
+            Ok(WaitStatus::Stopped(_, signum)) => {
+                let sigstr = get_strsig(signum as i32);
+                match signum {
+                    Signal::SIGTERM => {
                         ptrace::sigkill(proc.target).unwrap();
-                        proc.clear();
 
-                        println!("\nProgram terminated with signal {}, {}", stopsig, sigstr);
+                        println!("\nProgram terminated with signal {}, {}", signum, sigstr);
+                        proc.release();
                     },
-                    _ => println!("\nProgram stopped with signal {}, {}", stopsig, sigstr),
+                    _ => {
+                        println!("\nProgram Stopped with signal {}, {}", signum, sigstr);
+                    },
                 }
             },
-            s if libc::WIFSIGNALED(s) => {
-                match s {
-                    libc::SIGKILL => {
-                        println!("\nProgram killed from signal");
-                        proc.clear();
+            Ok(WaitStatus::Signaled(_, signum, _)) => {
+                let sigstr = get_strsig(signum as i32);
+                match signum {
+                    Signal::SIGKILL => {
+                        println!("\nProgram received {}, {}, terminating...", signum, sigstr);
+                        proc.release(); 
                     },
-                    _ => println!("Program received signal {}", get_strsig(s)),
+                    _ => println!("Signaled {}", signum),
                 }
             },
-            s => println!("\nProgram received status {}", s),
+            Ok(status) => println!("\nProgram received status: {:?}", status),
+            Err(err) => println!("waitpid failed: {:?}", err),
         }
     }
     MainLoopAction::None
@@ -114,7 +115,7 @@ pub fn vmmap(proc: &mut process::Proc) -> MainLoopAction {
 pub fn kill(proc: &mut process::Proc) -> MainLoopAction {
     if unsafe { ptrace::sigkill(proc.target).is_ok() } {
         println!("Process killed successfully");
-        proc.clear();
+        proc.release();
     }
     MainLoopAction::None
 }
@@ -124,7 +125,7 @@ pub fn quit(proc: &mut process::Proc) -> MainLoopAction {
         println!("terminating the process({})...", proc.target);
         if unsafe { ptrace::sigkill(proc.target).is_ok() } {
             println!("Process killed successfully");
-            proc.clear();
+            proc.release();
         }
     }
     MainLoopAction::Break
