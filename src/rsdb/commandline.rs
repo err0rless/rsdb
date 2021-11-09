@@ -26,7 +26,6 @@ fn rsdb_help() -> MainLoopAction {
     println!("    e.g) {} or {}", "attach 31337".bright_yellow(), "attach com.test.package".bright_yellow());
     println!("  detach => detach from the process");
     println!("  run | r => run the process only if --file argument given");
-    println!("             spawn the file and immediately stop it");
     println!("  info => info [Subcommand]");
     println!("    regs => show registers");
     println!("    proc => show process informations");
