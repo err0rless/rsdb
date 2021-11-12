@@ -1,6 +1,3 @@
-use core::panic;
-
-use colored::*;
 use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
 use super::{process, ptrace};
