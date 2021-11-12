@@ -52,7 +52,7 @@ impl Proc {
     }
 
     pub fn file_available(&self) -> bool {
-        !self.file.to_str().unwrap().is_empty()
+        self.file.exists() && self.file.is_file()
     }
 
     pub fn get_pid(&self) -> nix::unistd::Pid {
