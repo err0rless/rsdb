@@ -17,7 +17,7 @@ pub struct Proc {
 }
 
 impl Proc {
-    pub fn new() -> Proc {
+    pub fn new() -> Self {
         Proc { 
             target: -1, 
             file: PathBuf::new(),
@@ -28,24 +28,27 @@ impl Proc {
         }
     }
 
-    pub fn from(&mut self, pid: i32) {
-        self.target = pid;
-        self.cmdline = match procfs::get_proc_cmdline(pid) {
-            Ok(cmdline) => cmdline,
-            Err(_) => String::from(""),
-        };
-        self.exe = match procfs::get_proc_exe(pid) {
-            Ok(exe) => exe,
-            Err(_) => PathBuf::new(),
-        };
-        self.cwd = match procfs::get_proc_cwd(pid) {
-            Ok(cwd) => cwd,
-            Err(_) => PathBuf::new(),
-        };
-        self.maps = match procfs::get_proc_maps(pid) {
-            Ok(maps) => maps,
-            Err(_) => String::from(""),
-        };
+    pub fn from(pid: i32) -> Self {
+        Proc {
+            target: pid,
+            file: PathBuf::new(),
+            cmdline: match procfs::get_proc_cmdline(pid) {
+                Ok(cmdline) => cmdline,
+                Err(_) => String::from(""),
+            },
+            exe: match procfs::get_proc_exe(pid) {
+                Ok(exe) => exe,
+                Err(_) => PathBuf::new(),
+            },
+            cwd: match procfs::get_proc_cwd(pid) {
+                Ok(cwd) => cwd,
+                Err(_) => PathBuf::new(),
+            },
+            maps: match procfs::get_proc_maps(pid) {
+                Ok(maps) => maps,
+                Err(_) => String::from(""),
+            },
+        }
     }
 
     pub fn file_available(&self) -> bool {
@@ -98,7 +101,22 @@ impl Proc {
     }
  
     pub fn update(&mut self) {
-        self.from(self.target);
+        self.cmdline = match procfs::get_proc_cmdline(self.target) {
+            Ok(cmdline) => cmdline,
+            Err(_) => String::from(""),
+        };
+        self.exe = match procfs::get_proc_exe(self.target) {
+            Ok(exe) => exe,
+            Err(_) => PathBuf::new(),
+        };
+        self.cwd = match procfs::get_proc_cwd(self.target) {
+            Ok(cwd) => cwd,
+            Err(_) => PathBuf::new(),
+        };
+        self.maps = match procfs::get_proc_maps(self.target) {
+            Ok(maps) => maps,
+            Err(_) => String::from(""),
+        };
     }
 
     pub fn dump(&self) {

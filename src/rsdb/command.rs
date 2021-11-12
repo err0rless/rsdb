@@ -1,3 +1,5 @@
+use core::panic;
+
 use colored::*;
 use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
@@ -9,6 +11,7 @@ pub enum MainLoopAction {
     Continue,
 }
 
+// return signal name if @signum is available, "UNDEFINED" otherwise.
 fn get_strsig(signum: i32) -> &'static str {
     unsafe {
         let sigcstr = libc::strsignal(signum);
@@ -23,7 +26,7 @@ pub fn attach(proc: &mut process::Proc, newtarget: i32) -> MainLoopAction {
     match unsafe { ptrace::attach_wait(newtarget) } {
         Ok(_) => {
             println!("Successfully attached to pid: {}", newtarget);
-            proc.from(newtarget);
+            *proc = process::Proc::from(newtarget);
         },
         Err(_) => (),
     }
