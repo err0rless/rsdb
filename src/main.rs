@@ -7,9 +7,7 @@ use colored::*;
 use rustyline::error::ReadlineError;
 use clap::{App, Arg, ArgMatches};
 
-#[macro_use]
 mod rsdb;
-
 mod cli;
 
 enum PlatformChecks {
