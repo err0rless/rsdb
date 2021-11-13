@@ -10,6 +10,8 @@ use clap::{App, Arg, ArgMatches};
 #[macro_use]
 mod rsdb;
 
+mod cli;
+
 enum PlatformChecks {
     UnsupportedOS,
     UnsupportedArch,
@@ -64,7 +66,7 @@ fn welcome_msg() {
 }
 
 fn enter_cli(proc: &mut rsdb::process::Proc) {
-    use rsdb::command::MainLoopAction;
+    use cli::command::MainLoopAction;
 
     // Commandline prerequisites for rustyline
     let mut reader = rustyline::Editor::<()>::new();
@@ -74,7 +76,7 @@ fn enter_cli(proc: &mut rsdb::process::Proc) {
     loop {
         match reader.readline(shell.as_str()) {
             Ok(buffer) => {
-                match rsdb::commandline::rsdb_main(proc, &buffer) {
+                match cli::rsdb_main(proc, &buffer) {
                     MainLoopAction::Break => break,
                     MainLoopAction::Continue => continue,
                     _ => (),

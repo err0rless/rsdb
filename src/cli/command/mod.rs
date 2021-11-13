@@ -1,6 +1,8 @@
 use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
-use super::{process, ptrace};
+use crate::rsdb::{process, ptrace};
+
+pub mod info;
 
 pub enum MainLoopAction {
     None,
@@ -18,6 +20,10 @@ fn get_strsig(signum: i32) -> &'static str {
         sigstr
     }
 }
+
+/*
+ * commands that have no subcommands
+ */
 
 pub fn attach(proc: &mut process::Proc, newtarget: i32) -> MainLoopAction {
     match unsafe { ptrace::attach_wait(newtarget) } {
@@ -116,21 +122,4 @@ pub fn quit(proc: &mut process::Proc) -> MainLoopAction {
         }
     }
     MainLoopAction::Break
-}
-
-// Subcommands of info
-pub mod info {
-    use super::*;
-
-    pub fn regs(proc: &mut process::Proc) -> MainLoopAction {
-        proc.dump_regs();
-        MainLoopAction::None
-    }
-
-    pub fn proc(proc: &mut process::Proc) -> MainLoopAction {
-        proc.update();
-        proc.dump();
-        MainLoopAction::None
-    }
-    
 }

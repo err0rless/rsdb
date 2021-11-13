@@ -2,8 +2,10 @@ use std::iter::*;
 use regex::Regex;
 use colored::*;
 
-use super::{process, procfs, command};
+use crate::rsdb::{process, procfs};
 use command::MainLoopAction;
+
+pub mod command;
 
 macro_rules! continue_if {
     ($cond:expr) => {
