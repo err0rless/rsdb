@@ -2,7 +2,9 @@ use std::iter::*;
 use regex::Regex;
 use colored::*;
 
-use crate::rsdb::{process, procfs};
+use crate::process;
+use crate::process::*;
+
 use command::MainLoopAction;
 
 pub mod command;

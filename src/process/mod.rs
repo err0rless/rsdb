@@ -3,7 +3,9 @@ use std::os::unix::prelude::CommandExt;
 use libc::user_regs_struct;
 use linux_personality::personality;
 
-use super::procfs;
+use crate::ptrace;
+
+pub mod procfs;
 
 pub type PidType = nix::unistd::Pid;
 
@@ -131,7 +133,7 @@ impl Proc {
     }
 
     pub fn getregs(&self) -> Result<user_regs_struct, () >{
-        unsafe { super::ptrace::getregs(self.target) }
+        unsafe { ptrace::getregs(self.target) }
     }
 
     pub fn getreg(&self, regname: &str) -> Result<u64, ()> {
@@ -161,7 +163,7 @@ impl Proc {
     }
 
     pub fn dump_regs(&self) {
-        super::ptrace::dumpregs(&self.getregs().unwrap());
+        ptrace::dumpregs(&self.getregs().unwrap());
     }
 
     pub fn release(&mut self) {

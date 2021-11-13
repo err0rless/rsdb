@@ -7,20 +7,21 @@ use colored::*;
 use rustyline::error::ReadlineError;
 use clap::{App, Arg, ArgMatches};
 
-mod rsdb;
+mod ptrace;
 mod cli;
+mod process;
 
 enum PlatformChecks {
     UnsupportedOS,
     UnsupportedArch,
 }
 
-fn preprocess_arg_parser(proc: &mut rsdb::process::Proc, parser: &ArgMatches) {
+fn preprocess_arg_parser(proc: &mut process::Proc, parser: &ArgMatches) {
     // -p, --pid <PID> 
     let arg_pid = parser.value_of("pid").unwrap_or("-1");
     proc.target = match i32::from_str(arg_pid).unwrap_or(-1) {
         -1 => -1,
-        pid => unsafe { rsdb::ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
+        pid => unsafe { ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
     };
 
     // -f, --file <PATH>
@@ -63,7 +64,7 @@ fn welcome_msg() {
     println!("-> Type 'help' or '?' for help");
 }
 
-fn enter_cli(proc: &mut rsdb::process::Proc) {
+fn enter_cli(proc: &mut process::Proc) {
     use cli::command::MainLoopAction;
 
     // Commandline prerequisites for rustyline
@@ -127,7 +128,7 @@ fn main() -> Result<(), i32> {
     }
 
     // Singleton process object, it holds only one process.
-    let mut proc = rsdb::process::Proc::new();
+    let mut proc = process::Proc::new();
     preprocess_arg_parser(&mut proc, &arg_parser);
     enter_cli(&mut proc);
     Ok(())
