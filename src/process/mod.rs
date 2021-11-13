@@ -9,6 +9,18 @@ pub mod procfs;
 
 pub type PidType = nix::unistd::Pid;
 
+#[derive(PartialEq)]
+enum SessionType {
+    // Unknown for new object
+    Unknown,
+
+    // attached to the process with 'attach' command
+    Attach,
+
+    // spawned a program with 'run' command
+    Spawn,
+}
+
 pub struct Proc {
     pub target: i32,
     pub file: PathBuf,
@@ -16,6 +28,9 @@ pub struct Proc {
     exe: PathBuf,
     cwd: PathBuf,
     maps: String,
+
+    // Session type
+    session_type: SessionType,
 }
 
 impl Proc {
@@ -26,31 +41,50 @@ impl Proc {
             cmdline: String::from(""), 
             exe: PathBuf::new(), 
             cwd: PathBuf::new(),
-            maps: String::from("") 
+            maps: String::from(""),
+            session_type: SessionType::Unknown,
         }
     }
 
-    pub fn from(pid: i32) -> Self {
-        Proc {
-            target: pid,
-            file: PathBuf::new(),
-            cmdline: match procfs::get_proc_cmdline(pid) {
-                Ok(cmdline) => cmdline,
-                Err(_) => String::from(""),
-            },
-            exe: match procfs::get_proc_exe(pid) {
-                Ok(exe) => exe,
-                Err(_) => PathBuf::new(),
-            },
-            cwd: match procfs::get_proc_cwd(pid) {
-                Ok(cwd) => cwd,
-                Err(_) => PathBuf::new(),
-            },
-            maps: match procfs::get_proc_maps(pid) {
-                Ok(maps) => maps,
-                Err(_) => String::from(""),
-            },
+    // Private setter
+    fn set(&mut self, pid: i32) -> Result<i32, ()> {
+        if self.available() {
+            println!("Failed to process::set => Process not released {}", self.target);
+            return Err(());
         }
+
+        self.target = pid;
+        self.cmdline = match procfs::get_proc_cmdline(pid) {
+            Ok(cmdline) => cmdline,
+            Err(_) => String::from(""),
+        };
+        self.exe = match procfs::get_proc_exe(pid) {
+            Ok(exe) => exe,
+            Err(_) => PathBuf::new(),
+        };
+        self.cwd = match procfs::get_proc_cwd(pid) {
+            Ok(cwd) => cwd,
+            Err(_) => PathBuf::new(),
+        };
+        self.maps = match procfs::get_proc_maps(pid) {
+            Ok(maps) => maps,
+            Err(_) => String::from(""),
+        };
+        self.session_type = SessionType::Unknown;
+        Ok(pid)
+    }
+
+    pub fn set_as_attach(&mut self, pid: i32) -> Result<i32, ()> {
+        let r = self.set(pid);
+        self.file = PathBuf::new();
+        self.session_type = SessionType::Attach;
+        r
+    }
+
+    pub fn set_as_spawn(&mut self, pid: i32) -> Result<i32, ()> {
+        let r = self.set(pid);
+        self.session_type = SessionType::Spawn;
+        r
     }
 
     pub fn file_available(&self) -> bool {
@@ -84,7 +118,8 @@ impl Proc {
                 -1
             },
             Ok(nix::unistd::ForkResult::Parent { child }) => {
-                self.target = child.as_raw();
+                self.set_as_spawn(child.as_raw()).unwrap_or(-1);
+
                 println!("Successfully spawned a child with");
                 println!("  path: {}", self.file.canonicalize().unwrap().display());
                 println!("  pid : {}", self.target);
@@ -169,6 +204,7 @@ impl Proc {
     pub fn release(&mut self) {
         use colored::Colorize;
         println!("{}{}", "Releasing process: ".red(), self.target);
+        
         self.target = -1;
         self.cmdline.clear();
         self.exe.clear();

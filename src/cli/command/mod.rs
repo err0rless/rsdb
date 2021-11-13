@@ -30,7 +30,7 @@ pub fn attach(proc: &mut process::Proc, newtarget: i32) -> MainLoopAction {
     match unsafe { ptrace::attach_wait(newtarget) } {
         Ok(_) => {
             println!("Successfully attached to pid: {}", newtarget);
-            *proc = process::Proc::from(newtarget);
+            proc.set_as_attach(newtarget).unwrap_or(-1);
         },
         Err(_) => (),
     }
