@@ -1,8 +1,7 @@
 use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
 
-use crate::ptrace;
-use crate::process;
+use crate::{process, ptrace};
 
 pub mod info;
 

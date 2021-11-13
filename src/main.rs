@@ -7,9 +7,9 @@ use colored::*;
 use rustyline::error::ReadlineError;
 use clap::{App, Arg, ArgMatches};
 
-mod ptrace;
 mod cli;
 mod process;
+mod ptrace;
 
 enum PlatformChecks {
     UnsupportedOS,
