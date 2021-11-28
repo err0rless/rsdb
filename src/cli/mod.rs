@@ -2,7 +2,7 @@ use std::iter::*;
 use regex::Regex;
 use colored::*;
 
-use crate::{process, process::*};
+use crate::{session, process::*, traits::*};
 use command::MainLoopAction;
 
 pub mod command;
@@ -37,7 +37,7 @@ fn rsdb_help() -> MainLoopAction {
     MainLoopAction::None
 }
 
-pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
+pub fn rsdb_main(session: &mut session::Session, buffer: &String) -> MainLoopAction {
     let re = Regex::new(r"\s+").unwrap();
     let fullcmd = re.replace_all(buffer.trim(), " ");
     let commands = Vec::from_iter(fullcmd.split(" ").map(String::from));
@@ -46,7 +46,7 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
     match command.as_str() {
         "attach" => {
             continue_if!(commands.len() != 2, "Usage: attach [PID | Package/Process name]");
-            continue_if!(proc.available(), "rsdb is already holding the process, detach first");
+            continue_if!(session.proc.valid(), "rsdb is already holding the process, detach first");
             
             let process = &commands[1];
             let new_target = match process.parse::<i32>() {
@@ -55,46 +55,46 @@ pub fn rsdb_main(proc: &mut process::Proc, buffer: &String) -> MainLoopAction {
             };
             continue_if!(unsafe { !procfs::check_pid(new_target) }, 
                          "pid doesn't exist, check again");
-            command::attach(proc, new_target)
+            command::attach(session, new_target)
         },
         "detach" => {
-            continue_if!(!proc.available(), "No process has been attached");
-            command::detach(proc)
+            continue_if!(session.invalid(), "No process has been attached");
+            command::detach(session.mut_proc())
         },
         "continue" | "c" => {
-            continue_if!(!proc.available(), "No process has been attached");
-            command::cont(proc)
+            continue_if!(session.invalid(), "No process has been attached");
+            command::cont(session.mut_proc())
         },
         "run" | "r" => {
-            continue_if!(proc.available(), "rsdb is already holding the process, detach first");
-            continue_if!(!proc.file_available(), "File is not available!");
-            command::run(proc)
+            continue_if!(session.valid(), "rsdb is already holding the process, detach first");
+            continue_if!(session.elf.is_none(), "File is not available!");
+            command::run(session)
         },
         "info" => {
             continue_if!(commands.len() != 2, "Usage: info [Subcommand], help for more details");
             match commands[1].as_str() {
                 "regs" | "r" => {
-                    continue_if!(!proc.available(), "No process has been attached");
-                    command::info::regs(proc);
+                    continue_if!(session.invalid(), "No process has been attached");
+                    command::info::regs(session.mut_proc());
                 },
                 "proc" => {
-                    continue_if!(!proc.available(), "No process has been attached");
-                    command::info::proc(proc);
+                    continue_if!(session.invalid(), "No process has been attached");
+                    command::info::proc(session.mut_proc());
                 },
                 subcommand => println!("{}'{}'", "info: invalid subcommand: ".red(), subcommand),
             }
             MainLoopAction::None
         },
         "vmmap" | "maps" => {
-            continue_if!(!proc.available(), "No process has been attached");
-            command::vmmap(proc)
+            continue_if!(session.invalid(), "No process has been attached");
+            command::vmmap(session.mut_proc())
         },
         "kill" => {
             continue_if!(commands.len() != 1, "Usage: kill");
-            continue_if!(!proc.available(), "No process has been attached");
-            command::kill(proc)
+            continue_if!(session.invalid(), "No process has been attached");
+            command::kill(session.mut_proc())
         },
-        "exit" | "quit" | "q" => command::quit(proc),
+        "exit" | "quit" | "q" => command::quit(session.mut_proc()),
         "help" | "?" => rsdb_help(),
         "" => MainLoopAction::None,
         invalid_cmd => {

@@ -7,6 +7,9 @@ use colored::*;
 use rustyline::error::ReadlineError;
 use clap::{App, Arg, ArgMatches};
 
+mod traits;
+
+mod session;
 mod cli;
 mod process;
 mod ptrace;
@@ -16,29 +19,31 @@ enum PlatformChecks {
     UnsupportedArch,
 }
 
-fn preprocess_arg_parser(proc: &mut process::Proc, parser: &ArgMatches) {
+fn preprocess_arg_parser(session: &mut session::Session, parser: &ArgMatches) {
     // -p, --pid <PID> 
     let arg_pid = parser.value_of("pid").unwrap_or("-1");
-    proc.target = match i32::from_str(arg_pid).unwrap_or(-1) {
+    let target = match i32::from_str(arg_pid).unwrap_or(-1) {
         -1 => -1,
         pid => unsafe { ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
     };
+    session.set_target(target).unwrap_or(-1);
 
     // -f, --file <PATH>
-    proc.file = match parser.value_of("file").unwrap_or("") {
-        "" => PathBuf::from(""),
+    match parser.value_of("file").unwrap_or("") {
+        "" => (),
         file => {
             let filebuf = PathBuf::from(file);
-            match filebuf.exists() && filebuf.is_file() {
-                true => {
-                    println!("Path to file is available: '{}'", file);
-                    println!("  try 'run' to spawn the program");
-                    filebuf
-                },
-                false => {
-                    println!("Path to file is NOT available: '{}'", file);
-                    PathBuf::from("")
-                }
+            if filebuf.exists() && filebuf.is_file() {
+                println!("Path to file is available: '{}'", file);
+                println!("  try 'run' to spawn the program");
+
+                match session.set_elf(filebuf) {
+                    Ok(_) => (),
+                    Err(e) => println!("[ELF] Error: {:?}", e),
+                };
+            }
+            else {
+                println!("Path to file is NOT available: '{}'", file);
             }
         },
     }
@@ -64,7 +69,7 @@ fn welcome_msg() {
     println!("-> Type 'help' or '?' for help");
 }
 
-fn enter_cli(proc: &mut process::Proc) {
+fn enter_cli(session: &mut session::Session) {
     use cli::command::MainLoopAction;
 
     // Commandline prerequisites for rustyline
@@ -75,7 +80,7 @@ fn enter_cli(proc: &mut process::Proc) {
     loop {
         match reader.readline(shell.as_str()) {
             Ok(buffer) => {
-                match cli::rsdb_main(proc, &buffer) {
+                match cli::rsdb_main(session, &buffer) {
                     MainLoopAction::Break => break,
                     MainLoopAction::Continue => continue,
                     _ => (),
@@ -128,8 +133,9 @@ fn main() -> Result<(), i32> {
     }
 
     // Singleton process object, it holds only one process.
-    let mut proc = process::Proc::new();
-    preprocess_arg_parser(&mut proc, &arg_parser);
-    enter_cli(&mut proc);
+    let mut session = session::Session::new();
+
+    preprocess_arg_parser(&mut session, &arg_parser);
+    enter_cli(&mut session);
     Ok(())
 }

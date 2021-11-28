@@ -3,23 +3,12 @@ use std::os::unix::prelude::CommandExt;
 use libc::user_regs_struct;
 use linux_personality::personality;
 
+use crate::traits::*;
 use crate::ptrace;
 
 pub mod procfs;
 
 pub type PidType = nix::unistd::Pid;
-
-#[derive(PartialEq)]
-enum SessionType {
-    // Unknown for new object
-    Unknown,
-
-    // attached to the process with 'attach' command
-    Attach,
-
-    // spawned a program with 'run' command
-    Spawn,
-}
 
 pub struct Proc {
     pub target: i32,
@@ -28,9 +17,6 @@ pub struct Proc {
     exe: PathBuf,
     cwd: PathBuf,
     maps: String,
-
-    // Session type
-    session_type: SessionType,
 }
 
 impl Proc {
@@ -42,13 +28,11 @@ impl Proc {
             exe: PathBuf::new(), 
             cwd: PathBuf::new(),
             maps: String::from(""),
-            session_type: SessionType::Unknown,
         }
     }
 
-    // Private setter
-    fn set(&mut self, pid: i32) -> Result<i32, ()> {
-        if self.available() {
+    pub fn set(&mut self, pid: i32) -> Result<i32, ()> {
+        if self.valid() {
             println!("Failed to process::set => Process not released {}", self.target);
             return Err(());
         }
@@ -70,73 +54,13 @@ impl Proc {
             Ok(maps) => maps,
             Err(_) => String::from(""),
         };
-        self.session_type = SessionType::Unknown;
         Ok(pid)
-    }
-
-    pub fn set_as_attach(&mut self, pid: i32) -> Result<i32, ()> {
-        let r = self.set(pid);
-        self.file = PathBuf::new();
-        self.session_type = SessionType::Attach;
-        r
-    }
-
-    pub fn set_as_spawn(&mut self, pid: i32) -> Result<i32, ()> {
-        let r = self.set(pid);
-        self.session_type = SessionType::Spawn;
-        r
-    }
-
-    pub fn file_available(&self) -> bool {
-        self.file.exists() && self.file.is_file()
     }
 
     pub fn get_pid(&self) -> nix::unistd::Pid {
         PidType::from_raw(self.target)
     }
     
-    // Spawn, attach and wait
-    pub fn spawn_file(&mut self) -> i32 {
-        match unsafe{ nix::unistd::fork() } {
-            Ok(nix::unistd::ForkResult::Child) => {
-                // ptrace(PTRACE_TRACEME, ...);
-                nix::sys::ptrace::traceme().unwrap_or_else(|e| {
-                    println!("ptrace::traceme() failed with code {}", e);
-                });
-
-                // disable ASLR
-                personality(linux_personality::ADDR_NO_RANDOMIZE).unwrap_or_else(|_| {
-                    println!("failed to disable ASLR");
-                    linux_personality::Personality::empty()
-                });
-
-                // run executable on this process
-                std::process::Command::new(self.file.as_path())
-                    .exec();
-
-                // this is child process
-                -1
-            },
-            Ok(nix::unistd::ForkResult::Parent { child }) => {
-                self.set_as_spawn(child.as_raw()).unwrap_or(-1);
-
-                println!("Successfully spawned a child with");
-                println!("  path: {}", self.file.canonicalize().unwrap().display());
-                println!("  pid : {}", self.target);
-
-                child.as_raw()
-            },
-            Err(err) => {
-                println!("Fork failed with error: {}", err);
-                -1
-            }
-        }
-    }
-
-    pub fn available(&self) -> bool {
-        self.target != -1
-    }
- 
     pub fn update(&mut self) {
         self.cmdline = match procfs::get_proc_cmdline(self.target) {
             Ok(cmdline) => cmdline,
@@ -209,5 +133,45 @@ impl Proc {
         self.cmdline.clear();
         self.exe.clear();
         self.cwd.clear();
+    }
+}
+
+impl Valid for Proc {
+    fn valid(&self) -> bool { self.target != 1 }
+}
+
+// Spawn, attach and wait
+pub fn spawn_file(file: &PathBuf) -> i32 {
+    match unsafe{ nix::unistd::fork() } {
+        Ok(nix::unistd::ForkResult::Child) => {
+            // ptrace(PTRACE_TRACEME, ...);
+            nix::sys::ptrace::traceme().unwrap_or_else(|e| {
+                println!("ptrace::traceme() failed with code {}", e);
+            });
+
+            // disable ASLR
+            personality(linux_personality::ADDR_NO_RANDOMIZE).unwrap_or_else(|_| {
+                println!("failed to disable ASLR");
+                linux_personality::Personality::empty()
+            });
+
+            // run executable on this process
+            std::process::Command::new(file.as_path())
+                .exec();
+
+            // this is child process
+            -1
+        },
+        Ok(nix::unistd::ForkResult::Parent { child }) => {
+            println!("Successfully spawned a child with");
+            println!("  path: {}", file.canonicalize().unwrap().display());
+            println!("  pid : {}", child.as_raw());
+
+            child.as_raw()
+        },
+        Err(err) => {
+            println!("Fork failed with error: {}", err);
+            -1
+        }
     }
 }

@@ -1,7 +1,7 @@
 use nix::sys::wait::WaitStatus;
 use nix::sys::signal::Signal;
 
-use crate::{process, ptrace};
+use crate::{traits::*, process, ptrace, session};
 
 pub mod info;
 
@@ -26,11 +26,12 @@ fn get_strsig(signum: i32) -> &'static str {
  * commands that have no subcommands
  */
 
-pub fn attach(proc: &mut process::Proc, newtarget: i32) -> MainLoopAction {
+pub fn attach(session: &mut session::Session, newtarget: i32) -> MainLoopAction {
     match unsafe { ptrace::attach_wait(newtarget) } {
         Ok(_) => {
             println!("Successfully attached to pid: {}", newtarget);
-            proc.set_as_attach(newtarget).unwrap_or(-1);
+            session.set_target(newtarget).unwrap_or(-1);
+            session.set_type(session::Type::Attach);
         },
         Err(_) => (),
     }
@@ -86,16 +87,17 @@ pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
     MainLoopAction::None
 }
 
-pub fn run(proc: &mut process::Proc) -> MainLoopAction {
-    match proc.spawn_file() {
+pub fn run(session: &mut session::Session) -> MainLoopAction {
+    match process::spawn_file(session.path.as_ref().unwrap()) {
         -1 => MainLoopAction::None,
         child_pid => {
             // Wait parent until it's ready
             nix::sys::wait::wait().unwrap();
-            proc.target = child_pid;
+            session.set_target(child_pid).unwrap_or(-1);
+            session.set_type(session::Type::Spawn);
 
             // Continuing execution of the child
-            super::command::cont(proc)
+            super::command::cont(session.mut_proc())
         },
     }
 }
@@ -115,7 +117,7 @@ pub fn kill(proc: &mut process::Proc) -> MainLoopAction {
 }
 
 pub fn quit(proc: &mut process::Proc) -> MainLoopAction {
-    if proc.available() {
+    if proc.valid() {
         println!("terminating the process({})...", proc.target);
         if unsafe { ptrace::sigkill(proc.target).is_ok() } {
             println!("Process killed successfully");
