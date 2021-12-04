@@ -5,8 +5,8 @@ pub fn regs(proc: &mut process::Proc) -> MainLoopAction {
     MainLoopAction::None
 }
 
-pub fn proc(proc: &mut process::Proc) -> MainLoopAction {
-    proc.update();
-    proc.dump();
+pub fn proc(sess: &mut session::Session) -> MainLoopAction {
+    sess.proc.update();
+    sess.proc.dump();
     MainLoopAction::None
 }

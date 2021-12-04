@@ -39,14 +39,14 @@ pub fn attach(session: &mut session::Session, newtarget: i32) -> MainLoopAction 
 }
 
 pub fn detach(sess: &mut session::Session) -> MainLoopAction {
-    if unsafe { ptrace::detach(sess.get_target()).is_ok() } {
+    if ptrace::detach(sess.get_target()).is_ok() {
         sess.release();
     }
     MainLoopAction::None
 }
 
 pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
-    unsafe { ptrace::cont(proc.target).unwrap_or(-1); }
+    ptrace::cont(proc.target).unwrap_or(-1);
 
     // catching signal from the process
     match nix::sys::wait::waitpid(proc.get_pid(), None) {
@@ -58,7 +58,7 @@ pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
             let sigstr = get_strsig(signum as i32);
             match signum {
                 Signal::SIGTERM => {
-                    unsafe { ptrace::sigkill(proc.target).unwrap(); }
+                    ptrace::sigkill(proc.target).unwrap();
 
                     println!("\nProgram terminated with signal {}, {}", signum, sigstr);
                     proc.release();
@@ -109,7 +109,7 @@ pub fn vmmap(proc: &mut process::Proc) -> MainLoopAction {
 }
 
 pub fn kill(proc: &mut process::Proc) -> MainLoopAction {
-    if unsafe { ptrace::sigkill(proc.target).is_ok() } {
+    if ptrace::sigkill(proc.target).is_ok() {
         println!("Process killed successfully");
         proc.release();
     }
@@ -119,7 +119,7 @@ pub fn kill(proc: &mut process::Proc) -> MainLoopAction {
 pub fn quit(proc: &mut process::Proc) -> MainLoopAction {
     if proc.valid() {
         println!("terminating the process({})...", proc.target);
-        if unsafe { ptrace::sigkill(proc.target).is_ok() } {
+        if ptrace::sigkill(proc.target).is_ok() {
             println!("Process killed successfully");
             proc.release();
         }

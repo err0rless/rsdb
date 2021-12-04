@@ -53,7 +53,7 @@ pub fn rsdb_main(session: &mut session::Session, buffer: &String) -> MainLoopAct
                 Ok(pid) => pid,
                 Err(_) => procfs::findpid(process),
             };
-            continue_if!(unsafe { !procfs::check_pid(new_target) }, 
+            continue_if!(!procfs::check_pid(new_target), 
                          "pid doesn't exist, check again");
             command::attach(session, new_target)
         },
@@ -79,7 +79,7 @@ pub fn rsdb_main(session: &mut session::Session, buffer: &String) -> MainLoopAct
                 },
                 "proc" => {
                     continue_if!(session.invalid(), "No process has been attached");
-                    command::info::proc(session.mut_proc());
+                    command::info::proc(session);
                 },
                 subcommand => println!("{}'{}'", "info: invalid subcommand: ".red(), subcommand),
             }

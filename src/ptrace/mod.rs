@@ -11,7 +11,7 @@ const NULL: *mut i32 = ptr::null_mut();
 #[macro_export]
 macro_rules! rsdb_ptrace {
     ($($ptrace_args: expr),*) => {
-        /* unsafe */ {
+        unsafe {
             match Errno::result(libc::ptrace($($ptrace_args), *)) {
                 Ok(ret) => Ok(ret),
                 Err(no) => {
@@ -24,7 +24,7 @@ macro_rules! rsdb_ptrace {
     };
 }
 
-pub unsafe fn attach(target: i32) -> Result<i64, ()> {
+pub fn attach(target: i32) -> Result<i64, ()> {
     rsdb_ptrace!(PTRACE_ATTACH, target, NULL, NULL)
 }
 
@@ -38,25 +38,25 @@ pub fn attach_wait(target: i32) -> Result<i64, ()> {
     }
 }
 
-pub unsafe fn detach(target: i32) -> Result<i64, ()> {
+pub fn detach(target: i32) -> Result<i64, ()> {
     rsdb_ptrace!(PTRACE_DETACH, target, NULL, NULL)
 }
 
-pub unsafe fn cont(target: i32) -> Result<i64, ()> {
+pub fn cont(target: i32) -> Result<i64, ()> {
     rsdb_ptrace!(PTRACE_CONT, target, NULL, NULL)
 }
 
-pub unsafe fn sigkill(target: i32) -> Result<i64, ()> {
+pub fn sigkill(target: i32) -> Result<i64, ()> {
     let ret = rsdb_ptrace!(PTRACE_KILL, target, libc::SIGKILL, NULL);
-    waitpid(target, NULL, WSTOPPED);
+    unsafe { waitpid(target, NULL, WSTOPPED); }
     ret
 }
 
-pub unsafe fn getregs(target: i32) -> Result<user_regs_struct, ()> {
+pub fn getregs(target: i32) -> Result<user_regs_struct, ()> {
     let mut data = mem::MaybeUninit::uninit();
     rsdb_ptrace!(PTRACE_GETREGS, target, NULL, 
                  data.as_mut_ptr() as *const _ as *mut c_void)?;
-    Ok(data.assume_init())
+    Ok(unsafe { data.assume_init() })
 }
 
 pub fn dumpregs(regs: &user_regs_struct) {

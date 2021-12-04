@@ -94,7 +94,7 @@ impl Proc {
     }
 
     pub fn getregs(&self) -> Result<user_regs_struct, () >{
-        unsafe { ptrace::getregs(self.target) }
+        ptrace::getregs(self.target)
     }
 
     pub fn getreg(&self, regname: &str) -> Result<u64, ()> {

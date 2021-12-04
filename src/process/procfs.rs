@@ -50,8 +50,8 @@ pub fn get_proc_maps(target: i32) -> Result<String, ()> {
     }
 }
 
-pub unsafe fn check_pid(pid: i32) -> bool {
-    libc::kill(pid, 0) == KILL_SUCCESS
+pub fn check_pid(pid: i32) -> bool {
+    unsafe { libc::kill(pid, 0) == KILL_SUCCESS }
 }
 
 pub fn findpid(from: &str) -> i32 {
