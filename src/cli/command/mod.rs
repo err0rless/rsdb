@@ -27,7 +27,7 @@ fn get_strsig(signum: i32) -> &'static str {
  */
 
 pub fn attach(session: &mut session::Session, newtarget: i32) -> MainLoopAction {
-    match unsafe { ptrace::attach_wait(newtarget) } {
+    match ptrace::attach_wait(newtarget) {
         Ok(_) => {
             println!("Successfully attached to pid: {}", newtarget);
             session.set_target(newtarget).unwrap_or(-1);
@@ -38,9 +38,9 @@ pub fn attach(session: &mut session::Session, newtarget: i32) -> MainLoopAction 
     MainLoopAction::None
 }
 
-pub fn detach(proc: &mut process::Proc) -> MainLoopAction {
-    if unsafe { ptrace::detach(proc.target).is_ok() } {
-        proc.release();
+pub fn detach(sess: &mut session::Session) -> MainLoopAction {
+    if unsafe { ptrace::detach(sess.get_target()).is_ok() } {
+        sess.release();
     }
     MainLoopAction::None
 }

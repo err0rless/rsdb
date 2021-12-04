@@ -1,4 +1,4 @@
-use std::path;
+use std::path::{self, PathBuf};
 
 use elf;
 use crate::process::Proc;
@@ -13,7 +13,7 @@ pub enum Type {
     Spawn,
 
     // Unknown type
-    Unknown,
+    NotAttached,
 }
 
 pub struct Session {
@@ -34,7 +34,7 @@ impl Session {
             proc: Proc::new(),
             path: None,
             elf:  None,
-            attach_type: Type::Unknown,
+            attach_type: Type::NotAttached,
         }
     }
 
@@ -51,12 +51,21 @@ impl Session {
         Ok(())
     }
 
+    pub fn get_target(&self) -> i32 { self.proc.target }
+
     pub fn set_target(&mut self, target: i32) -> Result<i32, ()> {
         self.proc.set(target)
     }
 
     pub fn set_type(&mut self, t: Type) {
         self.attach_type = t;
+    }
+
+    pub fn get_exe(&self) -> &PathBuf { &self.proc.get_exe() }
+
+    pub fn release(&mut self) {
+        self.proc.release();
+        self.set_type(Type::NotAttached);
     }
 }
 

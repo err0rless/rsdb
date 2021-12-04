@@ -21,31 +21,35 @@ enum PlatformChecks {
 
 fn preprocess_arg_parser(session: &mut session::Session, parser: &ArgMatches) {
     // -p, --pid <PID> 
-    let arg_pid = parser.value_of("pid").unwrap_or("-1");
-    let target = match i32::from_str(arg_pid).unwrap_or(-1) {
-        -1 => -1,
-        pid => unsafe { ptrace::attach_wait(pid) }.unwrap_or(-1) as i32,
-    };
-    session.set_target(target).unwrap_or(-1);
+    if let Some(arg_pid) = parser.value_of("pid") {
+        if let Ok(pid) = i32::from_str(arg_pid) {
+            if ptrace::attach_wait(pid).is_ok() {
+                session.set_target(pid as i32).unwrap_or(0);
+                match session.set_elf(session.get_exe().to_path_buf()) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("[ELF] Failed to parse an ELF");
+                        println!("  path: '{}'", session.get_exe().to_path_buf().display());
+                        println!("  err : {:?}", e);
+                    },
+                }
+            }
+        }
+    }
 
     // -f, --file <PATH>
-    match parser.value_of("file").unwrap_or("") {
-        "" => (),
-        file => {
-            let filebuf = PathBuf::from(file);
-            if filebuf.exists() && filebuf.is_file() {
-                println!("Path to file is available: '{}'", file);
+    if let Some(file_str) = parser.value_of("file") {
+        match session.set_elf(PathBuf::from(file_str)) {
+            Ok(_) => {
+                println!("Path to file is available: '{}'", file_str);
                 println!("  try 'run' to spawn the program");
-
-                match session.set_elf(filebuf) {
-                    Ok(_) => (),
-                    Err(e) => println!("[ELF] Error: {:?}", e),
-                };
-            }
-            else {
-                println!("Path to file is NOT available: '{}'", file);
-            }
-        },
+            },
+            Err(e) => {
+                println!("[ELF] Failed to parse an ELF");
+                println!("  path: '{}'", file_str);
+                println!("  err : {:?}", e);
+            },
+        }
     }
 }
 

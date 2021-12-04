@@ -28,11 +28,13 @@ pub unsafe fn attach(target: i32) -> Result<i64, ()> {
     rsdb_ptrace!(PTRACE_ATTACH, target, NULL, NULL)
 }
 
-pub unsafe fn attach_wait(target: i32) -> Result<i64, ()> {
-    attach(target)?;
-    match waitpid(target, NULL, WSTOPPED) {
-        -1 => Err(()),
-        i => Ok(i as i64),
+pub fn attach_wait(target: i32) -> Result<i64, ()> {
+    unsafe {
+        attach(target)?;
+        match waitpid(target, NULL, WSTOPPED) {
+            -1 => Err(()),
+            i => Ok(i as i64),
+        }
     }
 }
 

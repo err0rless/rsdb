@@ -59,7 +59,7 @@ pub fn rsdb_main(session: &mut session::Session, buffer: &String) -> MainLoopAct
         },
         "detach" => {
             continue_if!(session.invalid(), "No process has been attached");
-            command::detach(session.mut_proc())
+            command::detach(session)
         },
         "continue" | "c" => {
             continue_if!(session.invalid(), "No process has been attached");

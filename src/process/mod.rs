@@ -80,6 +80,8 @@ impl Proc {
         };
     }
 
+    pub fn get_exe(&self) -> &PathBuf { &self.exe }
+
     pub fn dump(&self) {
         println!("pid = {}", self.target);
         println!("cmdline = '{}'", self.cmdline);
