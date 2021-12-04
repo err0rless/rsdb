@@ -25,6 +25,13 @@ fn preprocess_arg_parser(session: &mut session::Session, parser: &ArgMatches) {
         if let Ok(pid) = i32::from_str(arg_pid) {
             if ptrace::attach_wait(pid).is_ok() {
                 session.set_target(pid as i32).unwrap_or(0);
+
+                // print current pc
+                let pc = session.proc.getreg("pc").unwrap_or_default();
+                println!("Successfully attached to pid: {}", pid);
+                println!("Stopped at: pc={:#x}", pc);
+                
+                // set elf with '/proc/{PID}/exe'
                 match session.set_elf(session.get_exe().to_path_buf()) {
                     Ok(_) => (),
                     Err(e) => {

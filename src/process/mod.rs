@@ -115,7 +115,7 @@ impl Proc {
                     "r15" => Ok(regs.r15),
                     "rsp" => Ok(regs.rsp),
                     "rbp" => Ok(regs.rbp),
-                    "rip" => Ok(regs.rip),
+                    "rip" | "pc" => Ok(regs.rip),
                     _ => Err(()),
                 }
             }

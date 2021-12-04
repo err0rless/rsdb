@@ -65,8 +65,8 @@ pub fn cont(proc: &mut process::Proc) -> MainLoopAction {
                 },
                 _ => {
                     println!("\nProgram Stopped with signal {}, {}", signum, sigstr);
-                    proc.getreg("rip")
-                        .map(|pc| { println!("Stopped at 0x{:x}", pc); })
+                    proc.getreg("pc")
+                        .map(|pc| { println!("Stopped at: pc={:#x}", pc); })
                         .unwrap_or_default();
                 },
             }
