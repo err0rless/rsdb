@@ -137,7 +137,7 @@ impl Proc {
 }
 
 impl Valid for Proc {
-    fn valid(&self) -> bool { self.target != 1 }
+    fn valid(&self) -> bool { self.target != -1 }
 }
 
 // Spawn, attach and wait
